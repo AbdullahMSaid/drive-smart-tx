@@ -1,24 +1,51 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useState } from "react";
+import { SiteNav } from "@/components/site/SiteNav";
+import { Hero } from "@/components/site/Hero";
+import { Categories } from "@/components/site/Categories";
+import { Fleet } from "@/components/site/Fleet";
+import { PremiumUseCases } from "@/components/site/PremiumUseCases";
+import { HowItWorks } from "@/components/site/HowItWorks";
+import { WhyChooseUs } from "@/components/site/WhyChooseUs";
+import { Promotions } from "@/components/site/Promotions";
+import { LeadForm } from "@/components/site/LeadForm";
+import { Faq } from "@/components/site/Faq";
+import { FinalCta } from "@/components/site/FinalCta";
+import { SiteFooter } from "@/components/site/SiteFooter";
+import { scrollToId } from "@/lib/scroll";
+import type { Vehicle } from "@/data/vehicles";
 
-// No head() here: the home route inherits title/description/og/twitter from
-// __root.tsx, and ships no og:image so serve-time hosting can inject the
-// project's social preview (explicit og:image or latest screenshot).
 export const Route = createFileRoute("/")({
-  component: Index,
+  component: Landing,
 });
 
-// IMPORTANT: Replace this placeholder. See ./README.md for routing conventions.
-function Index() {
+function Landing() {
+  const [preselectedId, setPreselectedId] = useState<string | null>(null);
+
+  const onSelectVehicle = (v: Vehicle) => {
+    setPreselectedId(v.id);
+    scrollToId("lead-form");
+  };
+
   return (
-    <div
-      className="flex min-h-screen items-center justify-center"
-      style={{ backgroundColor: "#fcfbf8" }}
-    >
-      <img
-        data-lovable-blank-page-placeholder="REMOVE_THIS"
-        src="https://cdn.gpteng.co/blank-app-v1.svg"
-        alt="Your app will live here!"
-      />
+    <div className="min-h-screen bg-background text-foreground">
+      <SiteNav />
+      <main>
+        <Hero />
+        <Categories />
+        <Fleet onSelect={onSelectVehicle} />
+        <PremiumUseCases />
+        <HowItWorks />
+        <WhyChooseUs />
+        <Promotions />
+        <LeadForm
+          preselectedVehicleId={preselectedId}
+          onPreselectHandled={() => setPreselectedId(null)}
+        />
+        <Faq />
+        <FinalCta />
+      </main>
+      <SiteFooter />
     </div>
   );
 }
