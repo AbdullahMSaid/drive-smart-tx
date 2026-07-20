@@ -1,4 +1,5 @@
 import { Instagram, Facebook, Phone, Mail, MapPin, Clock } from "lucide-react";
+import logoAsset from "@/assets/royalty-luxury-logo.png.asset.json";
 
 export function SiteFooter() {
   return (
@@ -6,13 +7,14 @@ export function SiteFooter() {
       <div className="container-x py-14">
         <div className="grid gap-10 md:grid-cols-4">
           <div>
-            <div className="flex items-center gap-2">
-              <span className="grid h-9 w-9 place-items-center rounded-md bg-gold text-gold-foreground font-display font-bold">
-                L
-              </span>
-              <span className="font-display text-lg font-semibold text-foreground">
-                Lone Star <span className="text-gold">Rentals</span>
-              </span>
+            <div className="flex items-center gap-3">
+              <img
+                src={logoAsset.url}
+                alt="Royalty Luxury Transportation Services"
+                className="h-14 w-auto"
+                width={200}
+                height={200}
+              />
             </div>
             <p className="mt-4 text-sm text-muted-foreground max-w-xs">
               Texas economy car and premium SUV rentals for everyday drivers and special occasions.
@@ -61,7 +63,7 @@ export function SiteFooter() {
           subject to review and confirmation. Submitting an inquiry does not create a confirmed reservation.
         </div>
         <div className="mt-4 text-xs text-muted-foreground">
-          © {new Date().getFullYear()} Lone Star Rentals (placeholder). All rights reserved.
+          © {new Date().getFullYear()} Royalty Luxury Transportation Services. All rights reserved.
         </div>
       </div>
     </footer>
