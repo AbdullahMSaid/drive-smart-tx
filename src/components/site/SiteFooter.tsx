@@ -33,9 +33,15 @@ export function SiteFooter() {
           <div>
             <h4 className="font-display text-sm font-semibold uppercase tracking-wider text-foreground">Contact</h4>
             <ul className="mt-4 space-y-3 text-sm text-muted-foreground">
-              <li className="flex items-start gap-2"><Phone className="h-4 w-4 mt-0.5 text-gold shrink-0" /><span>(—) ——— ————</span></li>
-              <li className="flex items-start gap-2"><Mail className="h-4 w-4 mt-0.5 text-gold shrink-0" /><span>hello@—.com</span></li>
-              <li className="flex items-start gap-2"><MapPin className="h-4 w-4 mt-0.5 text-gold shrink-0" /><span>Serving the greater —— area, Texas</span></li>
+              <li className="flex items-start gap-2">
+                <Phone className="h-4 w-4 mt-0.5 text-gold shrink-0" />
+                <a href="tel:+16143591370" className="hover:text-gold transition-colors">(614) 359-1370</a>
+              </li>
+              <li className="flex items-start gap-2">
+                <Mail className="h-4 w-4 mt-0.5 text-gold shrink-0" />
+                <a href="mailto:royaltylux8@gmail.com" className="hover:text-gold transition-colors break-all">royaltylux8@gmail.com</a>
+              </li>
+              <li className="flex items-start gap-2"><MapPin className="h-4 w-4 mt-0.5 text-gold shrink-0" /><span>Serving the greater Dallas area, Texas</span></li>
               <li className="flex items-start gap-2"><Clock className="h-4 w-4 mt-0.5 text-gold shrink-0" /><span>Mon–Sat · Hours available on request</span></li>
             </ul>
           </div>
@@ -53,8 +59,16 @@ export function SiteFooter() {
           <div>
             <h4 className="font-display text-sm font-semibold uppercase tracking-wider text-foreground">Policies</h4>
             <ul className="mt-4 space-y-2 text-sm text-muted-foreground">
-              <li>Rental Policy — placeholder</li>
-              <li>Privacy Policy — placeholder</li>
+              <li>
+                <RentalPolicyDialog
+                  trigger={
+                    <button className="text-left hover:text-gold transition-colors">
+                      Rental Agreement
+                    </button>
+                  }
+                />
+              </li>
+              <li>Insurance information required at pickup</li>
             </ul>
           </div>
         </div>
