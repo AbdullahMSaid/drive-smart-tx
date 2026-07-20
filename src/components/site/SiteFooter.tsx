@@ -1,6 +1,8 @@
 import { Instagram, Facebook, Phone, Mail, MapPin, Clock } from "lucide-react";
+import { Link } from "@tanstack/react-router";
 import logoAsset from "@/assets/royalty-luxury-logo.png.asset.json";
 import { RentalPolicyDialog } from "./RentalPolicyDialog";
+
 
 export function SiteFooter() {
   return (
@@ -68,9 +70,15 @@ export function SiteFooter() {
                   }
                 />
               </li>
+              <li>
+                <Link to="/privacy" className="hover:text-gold transition-colors">
+                  Privacy Policy
+                </Link>
+              </li>
               <li>Insurance information required at pickup</li>
             </ul>
           </div>
+
         </div>
 
         <div className="mt-10 border-t border-border pt-6 text-xs text-muted-foreground leading-relaxed">
