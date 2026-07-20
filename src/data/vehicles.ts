@@ -1,4 +1,4 @@
-import economySedan from "@/assets/economy-sedan.jpg";
+import hondaAccordAsset from "@/assets/honda-accord.png.asset.json";
 import compactCrossover from "@/assets/compact-crossover.jpg";
 import suburban from "@/assets/suburban.jpg";
 import premiumSuv from "@/assets/premium-suv.jpg";
@@ -27,24 +27,25 @@ export interface Vehicle {
 
 export const vehicles: Vehicle[] = [
   {
-    id: "economy-sedan",
-    name: "Economy Sedan",
+    id: "honda-accord",
+    name: "Honda Accord",
     category: "economy",
     categoryLabel: "Economy",
-    image: economySedan,
+    image: hondaAccordAsset.url,
     dailyPrice: "$ —— / day",
     weeklyPrice: "$ —— / week",
     minRentalDays: 1,
     passengers: 5,
     luggage: "2 large bags",
     transmission: "Automatic",
-    fuel: "Fuel-efficient gasoline",
-    features: ["Bluetooth audio", "Backup camera", "Cruise control"],
+    fuel: "Great fuel economy",
+    features: ["Bluetooth", "Automatic", "Comfortable seating"],
     availabilityLabel: "Request availability",
     featured: true,
     description:
-      "A practical, comfortable sedan for everyday driving, commuting, and extended rentals.",
+      "A reliable, fuel-efficient Honda Accord — comfortable for daily driving, commuting, and extended rentals.",
   },
+
   {
     id: "compact-crossover",
     name: "Compact Crossover",
