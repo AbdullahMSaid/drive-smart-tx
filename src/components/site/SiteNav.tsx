@@ -3,6 +3,7 @@ import { Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { scrollToId } from "@/lib/scroll";
 import { cn } from "@/lib/utils";
+import logoAsset from "@/assets/royalty-luxury-logo.png.asset.json";
 
 const NAV = [
   { label: "Home", id: "home" },
@@ -40,15 +41,17 @@ export function SiteNav() {
       <div className="container-x flex h-16 items-center justify-between gap-4">
         <button
           onClick={() => go("home")}
-          className="flex items-center gap-2 text-left"
-          aria-label="Home"
+          className="flex items-center gap-3 text-left"
+          aria-label="Royalty Luxury Transportation Services — Home"
         >
-          <span className="grid h-9 w-9 place-items-center rounded-md bg-gold text-gold-foreground font-display font-bold">
-            L
-          </span>
-          <span className="font-display text-lg font-semibold tracking-tight text-foreground">
-            Lone Star <span className="text-gold">Rentals</span>
-          </span>
+          <img
+            src={logoAsset.url}
+            alt="Royalty Luxury Transportation Services"
+            className="h-11 w-auto md:h-12"
+            width={160}
+            height={160}
+          />
+          <span className="sr-only">Royalty Luxury Transportation Services</span>
         </button>
 
         <nav className="hidden lg:flex items-center gap-1">
