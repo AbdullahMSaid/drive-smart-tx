@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { scrollToId } from "@/lib/scroll";
+import { Phone, Mail } from "lucide-react";
 
 export function FinalCta() {
   return (
@@ -15,13 +16,31 @@ export function FinalCta() {
               Tell us what you need and when you need it. Our Lead Qualification AI will organize your request
               so the rental team can respond with availability and next steps.
             </p>
-            <Button
-              size="lg"
-              onClick={() => scrollToId("lead-form")}
-              className="mt-8 h-12 px-8 bg-gold text-gold-foreground hover:bg-gold/90"
-            >
-              Check Availability
-            </Button>
+            <div className="mt-8 flex flex-col sm:flex-row gap-3 justify-center">
+              <Button
+                size="lg"
+                onClick={() => scrollToId("lead-form")}
+                className="h-12 px-8 bg-gold text-gold-foreground hover:bg-gold/90"
+              >
+                Check Availability
+              </Button>
+              <Button
+                size="lg"
+                variant="outline"
+                asChild
+                className="h-12 px-8 border-gold/40 text-foreground hover:bg-accent"
+              >
+                <a href="tel:+16143591370">Call (614) 359-1370</a>
+              </Button>
+            </div>
+            <div className="mt-6 flex flex-col sm:flex-row gap-4 justify-center text-sm text-muted-foreground">
+              <a href="tel:+16143591370" className="inline-flex items-center gap-2 hover:text-gold">
+                <Phone className="h-4 w-4 text-gold" /> (614) 359-1370
+              </a>
+              <a href="mailto:royaltylux8@gmail.com" className="inline-flex items-center gap-2 hover:text-gold">
+                <Mail className="h-4 w-4 text-gold" /> royaltylux8@gmail.com
+              </a>
+            </div>
           </div>
         </div>
       </div>
