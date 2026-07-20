@@ -1,5 +1,6 @@
 import { Instagram, Facebook, Phone, Mail, MapPin, Clock } from "lucide-react";
 import logoAsset from "@/assets/royalty-luxury-logo.png.asset.json";
+import { RentalPolicyDialog } from "./RentalPolicyDialog";
 
 export function SiteFooter() {
   return (
