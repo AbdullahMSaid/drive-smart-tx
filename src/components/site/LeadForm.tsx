@@ -143,13 +143,12 @@ export function LeadForm({
     <section id="lead-form" className="section-y scroll-mt-20 bg-background">
       <div className="container-x">
         <SectionHeading
-          eyebrow="Lead Qualification AI"
+          eyebrow="Check availability"
           title="Check availability and get pre-qualified."
-          subtitle="Answer a few questions about your rental needs. The Lead Qualification AI will organize your request so the rental team can quickly review your dates, vehicle preference, and basic eligibility."
+          subtitle="Answer a few questions about your rental needs so our team can quickly review your dates, vehicle preference, and basic eligibility."
         />
 
-        <div className="mt-12 grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]">
-          <AssistantPanel />
+        <div className="mt-12 mx-auto max-w-3xl">
           <div className="rounded-2xl border border-border bg-card p-6 sm:p-8">
             {result ? (
               <ConfirmationView result={result} onReset={reset} />
