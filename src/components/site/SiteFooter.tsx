@@ -43,7 +43,7 @@ export function SiteFooter() {
                 <Mail className="h-4 w-4 mt-0.5 text-gold shrink-0" />
                 <a href="mailto:royaltylux8@gmail.com" className="hover:text-gold transition-colors break-all">royaltylux8@gmail.com</a>
               </li>
-              <li className="flex items-start gap-2"><MapPin className="h-4 w-4 mt-0.5 text-gold shrink-0" /><span>Serving the greater Dallas area, Texas</span></li>
+              <li className="flex items-start gap-2"><MapPin className="h-4 w-4 mt-0.5 text-gold shrink-0" /><span>5502 Denton Dr, Dallas, TX 75235 · Serving the DFW area</span></li>
               <li className="flex items-start gap-2"><Clock className="h-4 w-4 mt-0.5 text-gold shrink-0" /><span>Mon–Sat · Hours available on request</span></li>
             </ul>
           </div>

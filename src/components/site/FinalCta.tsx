@@ -13,8 +13,8 @@ export function FinalCta() {
               Ready to find the <span className="gold-gradient-text">right rental?</span>
             </h2>
             <p className="mx-auto mt-4 max-w-2xl text-muted-foreground">
-              Tell us what you need and when you need it. Our Lead Qualification AI will organize your request
-              so the rental team can respond with availability and next steps.
+              Tell us what you need and when you need it. We'll organize your request and get back to you
+              with availability and next steps.
             </p>
             <div className="mt-8 flex flex-col sm:flex-row gap-3 justify-center">
               <Button
