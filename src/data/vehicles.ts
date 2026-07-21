@@ -68,20 +68,6 @@ export const vehicles: Vehicle[] = [
 
   // ---------- Premium ----------
   {
-    id: "lexus-es350-2015",
-    name: "Lexus ES350",
-    subtitle: "2015 Luxury Sedan",
-    category: "premium",
-    categoryLabel: "Luxury Sedan",
-    image: premiumSuv,
-    description:
-      "A premium luxury sedan offering a quiet ride, refined comfort, and executive styling.",
-    highlights: ["5 Passengers", "Automatic", "Luxury Interior", "Smooth Ride"],
-    idealFor: ["Business Travel", "Date Night", "Airport Transportation", "Executive Travel"],
-    minRentalDays: 1,
-    status: "available",
-  },
-  {
     id: "suburban-2021",
     name: "Chevrolet Suburban",
     subtitle: "2021 Model",
@@ -113,6 +99,23 @@ export const vehicles: Vehicle[] = [
   },
 
   // ---------- Coming Soon ----------
+  {
+    id: "lexus-es350-soon",
+    name: "Lexus ES350",
+    subtitle: "Luxury SUV — joining the fleet soon",
+    category: "coming-soon",
+    categoryLabel: "Luxury SUV",
+    image: premiumSuv,
+    description:
+      "A refined luxury option joining our fleet soon. Join the waitlist to be notified when it becomes available.",
+    highlights: [],
+    idealFor: [],
+    minRentalDays: 1,
+    status: "coming-soon",
+    priceLine: "Coming Soon",
+    priceSubline: "Waitlist open",
+    waitlist: true,
+  },
   {
     id: "compact-crossover-soon",
     name: "Compact Crossover",
