@@ -3,107 +3,132 @@ import compactCrossover from "@/assets/compact-crossover.jpg";
 import suburban from "@/assets/suburban.jpg";
 import premiumSuv from "@/assets/premium-suv.jpg";
 
-export type VehicleCategory = "economy" | "premium-suv";
+export type VehicleGroup = "economy" | "premium" | "coming-soon";
+export type VehicleStatus = "available" | "limited" | "coming-soon" | "reserved";
 
 export interface Vehicle {
   id: string;
   name: string;
-  category: VehicleCategory;
+  subtitle: string;
+  category: VehicleGroup;
   categoryLabel: string;
   image: string;
-  dailyPrice: string;
-  weeklyPrice: string;
-  minRentalDays: number;
-  passengers: number;
-  luggage: string;
-  transmission: string;
-  fuel: string;
-  features: string[];
-  availabilityLabel: string;
-  featured: boolean;
-  promoLabel?: string;
   description: string;
+  highlights: string[];
+  idealFor: string[];
+  minRentalDays: number;
+  status: VehicleStatus;
+  /** Optional emphasis badge shown on the card (e.g. "3-Day Minimum"). */
+  promoLabel?: string;
+  /** Primary price line displayed on card. Defaults to "Call for Pricing". */
+  priceLine?: string;
+  /** Secondary price line. Defaults to "Daily & Weekly Rates Available". */
+  priceSubline?: string;
+  /** Waitlist mode replaces the request button ("Join Waitlist"). */
+  waitlist?: boolean;
 }
 
+export const STATUS_LABELS: Record<VehicleStatus, string> = {
+  available: "Available",
+  limited: "Limited Availability",
+  "coming-soon": "Coming Soon",
+  reserved: "Currently Reserved",
+};
+
 export const vehicles: Vehicle[] = [
+  // ---------- Economy ----------
   {
-    id: "honda-accord",
+    id: "honda-accord-2019",
     name: "Honda Accord",
+    subtitle: "2019 Model",
     category: "economy",
     categoryLabel: "Economy",
     image: hondaAccordAsset.url,
-    dailyPrice: "$ —— / day",
-    weeklyPrice: "$ —— / week",
-    minRentalDays: 1,
-    passengers: 5,
-    luggage: "2 large bags",
-    transmission: "Automatic",
-    fuel: "Great fuel economy",
-    features: ["Bluetooth", "Automatic", "Comfortable seating"],
-    availabilityLabel: "Request availability",
-    featured: true,
     description:
-      "A reliable, fuel-efficient Honda Accord — comfortable for daily driving, commuting, and extended rentals.",
+      "A newer, fuel-efficient sedan that's perfect for commuting, business travel, and everyday transportation.",
+    highlights: ["5 Passengers", "Automatic", "Excellent Fuel Economy", "Comfortable Ride"],
+    idealFor: ["Daily Driving", "Business Travel", "Weekend Trips"],
+    minRentalDays: 1,
+    status: "available",
   },
-
   {
-    id: "compact-crossover",
-    name: "Compact Crossover",
+    id: "honda-accord-2015",
+    name: "Honda Accord",
+    subtitle: "2015 Model",
     category: "economy",
     categoryLabel: "Economy",
-    image: compactCrossover,
-    dailyPrice: "$ —— / day",
-    weeklyPrice: "$ —— / week",
-    minRentalDays: 1,
-    passengers: 5,
-    luggage: "3 large bags",
-    transmission: "Automatic",
-    fuel: "Fuel-efficient gasoline",
-    features: ["Extra cargo space", "Elevated seating", "Apple CarPlay / Android Auto"],
-    availabilityLabel: "Request availability",
-    featured: true,
+    image: hondaAccordAsset.url,
     description:
-      "A versatile crossover with extra cargo room — comfortable for daily driving and weekend trips.",
+      "A dependable and affordable sedan that's comfortable, reliable, and ideal for extended rentals.",
+    highlights: ["5 Passengers", "Automatic", "Fuel Efficient", "Comfortable Seating"],
+    idealFor: ["Commuting", "Daily Transportation", "Long-Term Rentals"],
+    minRentalDays: 1,
+    status: "available",
+  },
+
+  // ---------- Premium ----------
+  {
+    id: "lexus-es350-2015",
+    name: "Lexus ES350",
+    subtitle: "2015 Luxury Sedan",
+    category: "premium",
+    categoryLabel: "Luxury Sedan",
+    image: premiumSuv,
+    description:
+      "A premium luxury sedan offering a quiet ride, refined comfort, and executive styling.",
+    highlights: ["5 Passengers", "Automatic", "Luxury Interior", "Smooth Ride"],
+    idealFor: ["Business Travel", "Date Night", "Airport Transportation", "Executive Travel"],
+    minRentalDays: 1,
+    status: "available",
   },
   {
-    id: "suburban",
-    name: "Chevrolet Suburban or Similar",
-    category: "premium-suv",
+    id: "suburban-2021",
+    name: "Chevrolet Suburban",
+    subtitle: "2021 Model",
+    category: "premium",
     categoryLabel: "Premium SUV",
     image: suburban,
-    dailyPrice: "$ —— / day",
-    weeklyPrice: "$ —— / week",
-    minRentalDays: 3,
-    passengers: 8,
-    luggage: "6+ large bags",
-    transmission: "Automatic",
-    fuel: "Gasoline",
-    features: ["7–8 passenger seating", "Premium interior", "Large luggage capacity"],
-    availabilityLabel: "Request availability",
-    featured: true,
-    promoLabel: "3-day minimum",
     description:
-      "Spacious full-size SUV built for group travel, family trips, and airport transportation.",
+      "A spacious full-size SUV designed for family vacations, airport transportation, road trips, and group travel.",
+    highlights: ["7–8 Passengers", "Automatic", "Large Cargo Capacity", "Premium Interior"],
+    idealFor: ["Family Vacations", "Airport Runs", "Road Trips", "Group Travel"],
+    minRentalDays: 3,
+    status: "available",
+    promoLabel: "3-Day Minimum",
   },
   {
-    id: "premium-full-size-suv",
-    name: "Premium Full-Size SUV",
-    category: "premium-suv",
+    id: "suburban-2023",
+    name: "Chevrolet Suburban",
+    subtitle: "2023 Model",
+    category: "premium",
     categoryLabel: "Premium SUV",
-    image: premiumSuv,
-    dailyPrice: "$ —— / day",
-    weeklyPrice: "$ —— / week",
-    minRentalDays: 3,
-    passengers: 7,
-    luggage: "5+ large bags",
-    transmission: "Automatic",
-    fuel: "Gasoline",
-    features: ["Premium comfort", "Advanced tech", "Ideal for special occasions"],
-    availabilityLabel: "Request availability",
-    featured: true,
-    promoLabel: "3-day minimum",
+    image: suburban,
     description:
-      "A refined full-size SUV for road trips, business travel, and memorable special occasions.",
+      "Our newest premium SUV with spacious seating, modern comfort, and plenty of cargo room.",
+    highlights: ["7–8 Passengers", "Automatic", "Premium Comfort", "Large Luggage Capacity"],
+    idealFor: ["Family Trips", "Luxury Travel", "Group Transportation", "Special Occasions"],
+    minRentalDays: 3,
+    status: "available",
+    promoLabel: "3-Day Minimum",
+  },
+
+  // ---------- Coming Soon ----------
+  {
+    id: "compact-crossover-soon",
+    name: "Compact Crossover",
+    subtitle: "Joining the fleet soon",
+    category: "coming-soon",
+    categoryLabel: "Coming Soon",
+    image: compactCrossover,
+    description:
+      "A compact crossover will be joining our fleet soon. Join the waitlist to be notified when it becomes available.",
+    highlights: [],
+    idealFor: [],
+    minRentalDays: 1,
+    status: "coming-soon",
+    priceLine: "Coming Soon",
+    priceSubline: "Waitlist open",
+    waitlist: true,
   },
 ];
 

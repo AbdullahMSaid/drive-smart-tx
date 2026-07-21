@@ -11,7 +11,7 @@ export interface LeadFormData {
   contactMethod: ContactMethod;
 
   vehicleId: string;
-  vehicleCategory: "economy" | "premium-suv" | "unsure";
+  vehicleCategory: "economy" | "premium" | "unsure";
   pickupDate: string;
   returnDate: string;
   rentalPurpose: string;
@@ -95,8 +95,8 @@ export function generateSubmissionId(): string {
 }
 
 function isPremiumCategory(v: Vehicle | null, cat: string): boolean {
-  if (v) return v.category === "premium-suv";
-  return cat === "premium-suv";
+  if (v) return v.category === "premium";
+  return cat === "premium";
 }
 
 export function qualifyLead(

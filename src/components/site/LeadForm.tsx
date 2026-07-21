@@ -55,10 +55,12 @@ export function LeadForm({
     if (!preselectedVehicleId) return;
     const v = vehicles.find((x) => x.id === preselectedVehicleId);
     if (!v) return;
+    const category: LeadFormData["vehicleCategory"] =
+      v.category === "economy" || v.category === "premium" ? v.category : "unsure";
     setData((d) => ({
       ...d,
       vehicleId: v.id,
-      vehicleCategory: v.category,
+      vehicleCategory: category,
     }));
     setResult(null);
     setStep(0);
@@ -71,7 +73,7 @@ export function LeadForm({
   );
   const duration = calcDurationDays(data.pickupDate, data.returnDate);
   const isPremium =
-    (selectedVehicle?.category ?? data.vehicleCategory) === "premium-suv";
+    (selectedVehicle?.category ?? data.vehicleCategory) === "premium";
   const premiumDurationInvalid =
     isPremium && duration !== null && duration < PREMIUM_SUV_MIN_DAYS;
 
@@ -323,14 +325,20 @@ function RentalStep({
             if (v === "any") { update("vehicleId", ""); return; }
             update("vehicleId", v);
             const veh = vehicles.find((x) => x.id === v);
-            if (veh) update("vehicleCategory", veh.category);
+            if (veh && (veh.category === "economy" || veh.category === "premium")) {
+              update("vehicleCategory", veh.category);
+            }
           }}>
             <SelectTrigger><SelectValue placeholder="Choose a vehicle" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="any">No specific vehicle yet</SelectItem>
-              {vehicles.map((v) => (
-                <SelectItem key={v.id} value={v.id}>{v.name}</SelectItem>
-              ))}
+              {vehicles
+                .filter((v) => v.category !== "coming-soon")
+                .map((v) => (
+                  <SelectItem key={v.id} value={v.id}>
+                    {v.name} — {v.subtitle}
+                  </SelectItem>
+                ))}
             </SelectContent>
           </Select>
         </Field>
@@ -339,7 +347,7 @@ function RentalStep({
             <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="economy">Economy</SelectItem>
-              <SelectItem value="premium-suv">Premium SUV</SelectItem>
+              <SelectItem value="premium">Premium</SelectItem>
               <SelectItem value="unsure">Not sure</SelectItem>
             </SelectContent>
           </Select>
