@@ -116,23 +116,6 @@ export const vehicles: Vehicle[] = [
 
   // ---------- Coming Soon ----------
   {
-    id: "luxury-suv-soon",
-    name: "Luxury SUV",
-    subtitle: "Joining the fleet soon",
-    category: "coming-soon",
-    categoryLabel: "Coming Soon",
-    image: lexusEs350Asset.url,
-    description:
-      "A premium luxury SUV will be joining our fleet soon. Join the waitlist to be first in line when it arrives.",
-    highlights: [],
-    idealFor: [],
-    minRentalDays: 3,
-    status: "coming-soon",
-    priceLine: "Coming Soon",
-    priceSubline: "Waitlist open",
-    waitlist: true,
-  },
-  {
     id: "compact-crossover-soon",
     name: "Compact Crossover",
     subtitle: "Joining the fleet soon",
