@@ -4,49 +4,78 @@ import { SectionHeading } from "./SectionHeading";
 
 export function Fleet({ onSelect }: { onSelect: (v: Vehicle) => void }) {
   const economy = vehicles.filter((v) => v.category === "economy");
-  const premium = vehicles.filter((v) => v.category === "premium-suv");
+  const premium = vehicles.filter((v) => v.category === "premium");
+  const comingSoon = vehicles.filter((v) => v.category === "coming-soon");
 
   return (
     <section id="fleet" className="section-y bg-background">
       <div className="container-x">
         <SectionHeading
           eyebrow="Featured fleet"
-          title="Vehicles ready for the road."
-          subtitle="A curated fleet of economy cars and premium SUVs. Tell us which one fits your trip and the rental team will confirm availability."
+          title="Choose Your Rental"
+          subtitle="Our carefully maintained fleet includes reliable economy vehicles, premium luxury sedans, and spacious SUVs for every occasion."
         />
 
-        <div id="fleet-economy" className="mt-14 scroll-mt-24">
-          <div className="mb-6 flex items-baseline justify-between border-b border-border pb-3">
-            <h3 className="font-display text-2xl font-semibold text-foreground">Economy Vehicles</h3>
-            <span className="text-xs uppercase tracking-wider text-muted-foreground">
-              {economy.length} vehicles
-            </span>
-          </div>
-          <div className="grid gap-6 sm:grid-cols-2">
-            {economy.map((v) => (
-              <VehicleCard key={v.id} vehicle={v} onCheckAvailability={onSelect} />
-            ))}
-          </div>
-        </div>
+        <FleetGroup
+          id="fleet-economy"
+          title="Economy Vehicles"
+          count={economy.length}
+          items={economy}
+          onSelect={onSelect}
+        />
 
-        <div id="fleet-premium" className="mt-16 scroll-mt-24">
-          <div className="mb-6 flex items-baseline justify-between border-b border-border pb-3">
-            <h3 className="font-display text-2xl font-semibold text-foreground">Premium SUVs</h3>
-            <span className="text-xs uppercase tracking-wider text-muted-foreground">
-              {premium.length} vehicles
-            </span>
-          </div>
-          <div className="grid gap-6 sm:grid-cols-2">
-            {premium.map((v) => (
-              <VehicleCard key={v.id} vehicle={v} onCheckAvailability={onSelect} />
-            ))}
-          </div>
-        </div>
+        <FleetGroup
+          id="fleet-premium"
+          title="Premium Vehicles"
+          count={premium.length}
+          items={premium}
+          onSelect={onSelect}
+        />
+
+        {comingSoon.length > 0 && (
+          <FleetGroup
+            id="fleet-coming-soon"
+            title="Coming Soon"
+            count={comingSoon.length}
+            items={comingSoon}
+            onSelect={onSelect}
+          />
+        )}
 
         <p className="mt-10 text-center text-xs text-muted-foreground max-w-2xl mx-auto">
           Vehicle availability, pricing, eligibility, and final rental terms must be confirmed by the rental provider.
         </p>
       </div>
     </section>
+  );
+}
+
+function FleetGroup({
+  id,
+  title,
+  count,
+  items,
+  onSelect,
+}: {
+  id: string;
+  title: string;
+  count: number;
+  items: Vehicle[];
+  onSelect: (v: Vehicle) => void;
+}) {
+  return (
+    <div id={id} className="mt-14 scroll-mt-24">
+      <div className="mb-6 flex items-baseline justify-between border-b border-border pb-3">
+        <h3 className="font-display text-2xl font-semibold text-foreground">{title}</h3>
+        <span className="text-xs uppercase tracking-wider text-muted-foreground">
+          {count} vehicle{count === 1 ? "" : "s"}
+        </span>
+      </div>
+      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        {items.map((v) => (
+          <VehicleCard key={v.id} vehicle={v} onCheckAvailability={onSelect} />
+        ))}
+      </div>
+    </div>
   );
 }
