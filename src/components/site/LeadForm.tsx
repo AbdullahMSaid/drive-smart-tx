@@ -175,6 +175,7 @@ export function LeadForm({
                     <RentalStep
                       data={data} update={update} duration={duration}
                       isPremium={isPremium} premiumDurationInvalid={premiumDurationInvalid}
+                      pickupDateRef={pickupDateRef}
                     />
                   )}
                   {step === 2 && <QualStep data={data} update={update} />}
