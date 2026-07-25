@@ -321,18 +321,19 @@ function ContactStep({ data, update }: { data: LeadFormData; update: <K extends 
 }
 
 function RentalStep({
-  data, update, duration, isPremium, premiumDurationInvalid,
+  data, update, duration, isPremium, premiumDurationInvalid, pickupDateRef,
 }: {
   data: LeadFormData;
   update: <K extends keyof LeadFormData>(k: K, v: LeadFormData[K]) => void;
   duration: number | null;
   isPremium: boolean;
   premiumDurationInvalid: boolean;
+  pickupDateRef: React.RefObject<HTMLInputElement | null>;
 }) {
   const today = new Date().toISOString().split("T")[0];
   return (
     <div className="space-y-5 rise-in">
-      <StepHeader n="02" title="Rental request" desc="Tell us about the vehicle and dates you need." />
+      <StepHeader n="02" title="Rental request" desc="Tell us about the vehicle, dates, and how you'd like to receive it." />
       <div className="grid gap-4 sm:grid-cols-2">
         <Field label="Desired vehicle">
           <Select value={data.vehicleId || "any"} onValueChange={(v) => {
@@ -370,12 +371,24 @@ function RentalStep({
 
       <div className="grid gap-4 sm:grid-cols-2">
         <Field label="Pickup date">
-          <Input type="date" min={today} value={data.pickupDate} onChange={(e) => update("pickupDate", e.target.value)} />
+          <Input ref={pickupDateRef} type="date" min={today} value={data.pickupDate} onChange={(e) => update("pickupDate", e.target.value)} />
+        </Field>
+        <Field label="Pickup time">
+          <Input type="time" value={data.pickupTime} onChange={(e) => update("pickupTime", e.target.value)} />
         </Field>
         <Field label="Return date">
           <Input type="date" min={data.pickupDate || today} value={data.returnDate} onChange={(e) => update("returnDate", e.target.value)} />
         </Field>
+        <Field label="Return time">
+          <Input type="time" value={data.returnTime} onChange={(e) => update("returnTime", e.target.value)} />
+        </Field>
       </div>
+
+      <RentalEstimator
+        vehicleId={data.vehicleId}
+        pickupDate={data.pickupDate}
+        returnDate={data.returnDate}
+      />
 
       {duration !== null && (
         <div className="rounded-md border border-border bg-secondary/50 px-3 py-2 text-sm text-muted-foreground">
@@ -395,6 +408,26 @@ function RentalStep({
         </div>
       )}
 
+      <Field label="Pickup or delivery preference">
+        <div className="grid grid-cols-2 gap-2">
+          {(["pickup", "delivery"] as const).map((opt) => (
+            <button
+              key={opt}
+              type="button"
+              onClick={() => update("pickupPreference", opt)}
+              className={cn(
+                "rounded-md border px-3 py-2 text-sm font-medium transition",
+                data.pickupPreference === opt
+                  ? "border-gold bg-gold/10 text-foreground"
+                  : "border-border text-muted-foreground hover:text-foreground",
+              )}
+            >
+              {opt === "pickup" ? "I'll pick it up" : "Request delivery"}
+            </button>
+          ))}
+        </div>
+      </Field>
+
       <Field label="Rental purpose">
         <Select value={data.rentalPurpose} onValueChange={(v) => update("rentalPurpose", v)}>
           <SelectTrigger><SelectValue placeholder="Select purpose" /></SelectTrigger>
@@ -404,8 +437,8 @@ function RentalStep({
         </Select>
       </Field>
 
-      <Field label="Pickup location or preferred service area">
-        <Input value={data.pickupArea} onChange={(e) => update("pickupArea", e.target.value)} placeholder="City or neighborhood in Texas" maxLength={120} />
+      <Field label={data.pickupPreference === "delivery" ? "Delivery address or preferred area" : "Pickup location or preferred service area"}>
+        <Input value={data.pickupArea} onChange={(e) => update("pickupArea", e.target.value)} placeholder="City or neighborhood in the DFW area" maxLength={120} />
       </Field>
 
       <Field label="Additional rental notes (optional)">
