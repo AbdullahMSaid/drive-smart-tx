@@ -77,7 +77,7 @@ function PrivacyPage() {
               <li>Evaluate rental requests</li>
               <li>Contact customers</li>
               <li>Improve our services</li>
-              <li>Operate the Lead Qualification AI</li>
+              <li>Process rental request submissions</li>
               <li>Improve website performance</li>
               <li>Comply with legal obligations</li>
             </ul>

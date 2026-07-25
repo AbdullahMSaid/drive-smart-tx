@@ -1,7 +1,7 @@
 export const faqs = [
   {
     q: "Is submitting the form the same as making a reservation?",
-    a: "No. Submitting the Lead Qualification form sends a rental request for review. A team member will follow up regarding availability, pricing, and next steps. A reservation is only confirmed once the rental team confirms it directly with you.",
+    a: "No. Submitting the rental request form sends your inquiry for review. A team member will follow up regarding availability, pricing, and next steps. A reservation is only confirmed once the rental team confirms it directly with you.",
   },
   {
     q: "What information is required to rent a vehicle?",

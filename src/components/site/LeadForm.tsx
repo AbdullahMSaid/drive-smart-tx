@@ -419,7 +419,7 @@ function QualStep({ data, update }: { data: LeadFormData; update: <K extends key
 
       <YN q="Have you rented a vehicle before?" value={data.rentedBefore} onChange={(v) => update("rentedBefore", v)} />
 
-      <Field label="Have you had any major driving violations or serious accidents in the last 3 years?">
+      <Field label="Have you had any major driving violations or serious accidents in the last 5 years?">
         <ButtonGroup
           value={data.drivingHistory}
           onChange={(v) => update("drivingHistory", v as LeadFormData["drivingHistory"])}
@@ -533,7 +533,7 @@ function ConfirmationView({ result, onReset }: { result: QualifiedLead; onReset:
         </div>
       </div>
       <p className="mt-4 text-muted-foreground">
-        Our Lead Qualification AI has organized your information for review. A member of the rental team will contact
+        Your information has been organized for review. A member of the rental team will contact
         you regarding vehicle availability, pricing, eligibility, and next steps.
       </p>
 

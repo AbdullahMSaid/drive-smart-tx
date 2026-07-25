@@ -56,7 +56,7 @@ export const vehicles: Vehicle[] = [
   {
     id: "honda-accord-2015",
     name: "Honda Accord",
-    subtitle: "2013 MODEL",
+    subtitle: "2013 Model",
     category: "economy",
     categoryLabel: "Economy",
     image: hondaAccordAsset.url,

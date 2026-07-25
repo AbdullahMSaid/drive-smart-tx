@@ -138,7 +138,7 @@ export function qualifyLead(
 
   // Driving history
   if (data.drivingHistory === "no") { positive.push("Clean recent driving history reported"); score += 8; }
-  else if (data.drivingHistory === "yes") { risks.push("Reported major violation or accident in last 3 years"); score -= 5; }
+  else if (data.drivingHistory === "yes") { risks.push("Reported major violation or accident in last 5 years"); score -= 5; }
   else if (data.drivingHistory === "discuss") { risks.push("Driving history: prefers to discuss"); }
 
   // Docs
