@@ -4,7 +4,7 @@ import { Search, CalendarCheck, BadgeCheck, MessageCircle } from "lucide-react";
 const steps = [
   { icon: Search, title: "Browse Vehicles", body: "Explore economy cars and premium SUVs." },
   { icon: CalendarCheck, title: "Check Availability", body: "Tell us which vehicle you need and your preferred rental dates." },
-  { icon: BadgeCheck, title: "Get Pre-Qualified", body: "Our Lead Qualification AI collects the basic information needed to review your request." },
+  { icon: BadgeCheck, title: "Get Pre-Qualified", body: "A short guided form collects the basic information needed to review your request." },
   { icon: MessageCircle, title: "Receive a Response", body: "The rental team reviews your information and contacts you with availability, pricing, and next steps." },
 ];
 
