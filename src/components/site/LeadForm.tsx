@@ -96,8 +96,15 @@ export function LeadForm({
     }
     if (s === 1) {
       if (!data.pickupDate || !data.returnDate) return "Please choose pickup and return dates.";
+      if (!data.pickupTime || !data.returnTime) return "Please choose pickup and return times.";
       if (duration === null) return "Return date must be on or after pickup date.";
       if (premiumDurationInvalid) return `Premium SUV rentals require a minimum of ${PREMIUM_SUV_MIN_DAYS} days.`;
+      if (data.vehicleId) {
+        const est = estimateRental(data.vehicleId, data.pickupDate, data.returnDate);
+        if (est && !est.meetsMinimum) {
+          return `This vehicle requires a minimum ${est.minimumDays}-day rental.`;
+        }
+      }
       if (!data.rentalPurpose) return "Please choose a rental purpose.";
     }
     if (s === 2) {
