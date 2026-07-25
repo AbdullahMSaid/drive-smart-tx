@@ -1,6 +1,8 @@
-import { Check, Sparkles } from "lucide-react";
+import { Check, Sparkles, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { STATUS_LABELS, type Vehicle } from "@/data/vehicles";
+import { getVehiclePricing, formatCurrency } from "@/data/pricing";
+import { RateDetailsDialog } from "./RateDetailsDialog";
 import { cn } from "@/lib/utils";
 
 export function VehicleCard({
@@ -11,10 +13,16 @@ export function VehicleCard({
   onCheckAvailability: (v: Vehicle) => void;
 }) {
   const isComingSoon = vehicle.category === "coming-soon" || vehicle.status === "coming-soon";
-  const priceLine = vehicle.priceLine ?? "Call for Pricing";
+  const pricing = getVehiclePricing(vehicle.id);
+  const priceLine = pricing
+    ? `From ${formatCurrency(pricing.fromPrice)}/day`
+    : vehicle.priceLine ?? "Pricing on request";
   const priceSubline =
-    vehicle.priceSubline ?? (isComingSoon ? "Waitlist open" : "Daily & Weekly Rates Available");
-  const buttonLabel = vehicle.waitlist ? "Join Waitlist" : "Request This Vehicle";
+    vehicle.priceSubline ??
+    (isComingSoon ? "Waitlist open" : "Daily & weekly rates available");
+  const buttonLabel = vehicle.waitlist
+    ? "Join Waitlist"
+    : "Check Price & Availability";
 
   return (
     <article
@@ -95,30 +103,46 @@ export function VehicleCard({
           </div>
         )}
 
-        <div className="mt-6 flex items-end justify-between border-t border-border pt-5">
-          <div>
-            <div className="text-[11px] uppercase tracking-wider text-muted-foreground">
-              Pricing
+        <div className="mt-auto pt-6">
+          <div className="flex items-end justify-between border-t border-border pt-5">
+            <div>
+              <div className="text-[11px] uppercase tracking-wider text-muted-foreground">
+                Pricing
+              </div>
+              <div className="mt-1 font-display text-xl font-semibold text-gold">
+                {priceLine}
+              </div>
+              <div className="text-xs text-muted-foreground">{priceSubline}</div>
+              {pricing && !isComingSoon && (
+                <RateDetailsDialog
+                  vehicleName={vehicle.name}
+                  pricing={pricing}
+                  trigger={
+                    <button
+                      type="button"
+                      className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-gold hover:text-gold/80 underline-offset-2 hover:underline"
+                    >
+                      <Info className="h-3 w-3" /> View rate details
+                    </button>
+                  }
+                />
+              )}
             </div>
-            <div className="mt-1 font-display text-xl font-semibold text-gold">
-              {priceLine}
+            <div className="text-right text-xs text-muted-foreground">
+              <div>{STATUS_LABELS[vehicle.status]}</div>
+              <div className="mt-1">
+                Min. {vehicle.minRentalDays} day{vehicle.minRentalDays > 1 ? "s" : ""}
+              </div>
             </div>
-            <div className="text-xs text-muted-foreground">{priceSubline}</div>
           </div>
-          <div className="text-right text-xs text-muted-foreground">
-            <div>{STATUS_LABELS[vehicle.status]}</div>
-            <div className="mt-1">
-              Min. {vehicle.minRentalDays} day{vehicle.minRentalDays > 1 ? "s" : ""}
-            </div>
-          </div>
-        </div>
 
-        <Button
-          onClick={() => onCheckAvailability(vehicle)}
-          className="mt-5 bg-gold text-gold-foreground hover:bg-gold/90"
-        >
-          {buttonLabel}
-        </Button>
+          <Button
+            onClick={() => onCheckAvailability(vehicle)}
+            className="mt-5 w-full bg-gold text-gold-foreground hover:bg-gold/90"
+          >
+            {buttonLabel}
+          </Button>
+        </div>
       </div>
     </article>
   );
