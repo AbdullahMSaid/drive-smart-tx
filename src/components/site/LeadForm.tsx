@@ -51,6 +51,7 @@ export function LeadForm({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<QualifiedLead | null>(null);
+  const pickupDateRef = useRef<HTMLInputElement | null>(null);
 
   // Handle preselection from vehicle cards
   useEffect(() => {
@@ -65,8 +66,12 @@ export function LeadForm({
       vehicleCategory: category,
     }));
     setResult(null);
-    setStep(0);
+    setStep(1);
     onPreselectHandled();
+    // Focus the pickup-date field after the rental step renders
+    requestAnimationFrame(() => {
+      setTimeout(() => pickupDateRef.current?.focus(), 60);
+    });
   }, [preselectedVehicleId, onPreselectHandled]);
 
   const selectedVehicle = useMemo(
