@@ -3,6 +3,7 @@ import { PREMIUM_SUV_MIN_DAYS, MIN_RENTAL_AGE_PLACEHOLDER, type Vehicle } from "
 export type YesNo = "yes" | "no";
 export type YesNoMaybe = "yes" | "no" | "unsure";
 export type ContactMethod = "phone" | "text" | "email";
+export type PickupPreference = "pickup" | "delivery";
 
 export interface LeadFormData {
   fullName: string;
@@ -13,7 +14,10 @@ export interface LeadFormData {
   vehicleId: string;
   vehicleCategory: "economy" | "premium" | "unsure";
   pickupDate: string;
+  pickupTime: string;
   returnDate: string;
+  returnTime: string;
+  pickupPreference: PickupPreference;
   rentalPurpose: string;
   pickupArea: string;
   notes: string;
@@ -41,7 +45,10 @@ export const emptyLead: LeadFormData = {
   vehicleId: "",
   vehicleCategory: "unsure",
   pickupDate: "",
+  pickupTime: "10:00",
   returnDate: "",
+  returnTime: "10:00",
+  pickupPreference: "pickup",
   rentalPurpose: "",
   pickupArea: "",
   notes: "",

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Bot, ArrowRight, ArrowLeft, Loader2, CheckCircle2, AlertCircle, ClipboardCheck, Sparkles, ListChecks } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,7 +10,9 @@ import {
 } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { SectionHeading } from "./SectionHeading";
+import { RentalEstimator } from "./RentalEstimator";
 import { vehicles, PREMIUM_SUV_MIN_DAYS, MIN_RENTAL_AGE_PLACEHOLDER } from "@/data/vehicles";
+import { estimateRental, getVehiclePricing } from "@/data/pricing";
 import {
   emptyLead,
   calcDurationDays,
@@ -49,6 +51,7 @@ export function LeadForm({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<QualifiedLead | null>(null);
+  const pickupDateRef = useRef<HTMLInputElement | null>(null);
 
   // Handle preselection from vehicle cards
   useEffect(() => {
@@ -63,8 +66,12 @@ export function LeadForm({
       vehicleCategory: category,
     }));
     setResult(null);
-    setStep(0);
+    setStep(1);
     onPreselectHandled();
+    // Focus the pickup-date field after the rental step renders
+    requestAnimationFrame(() => {
+      setTimeout(() => pickupDateRef.current?.focus(), 60);
+    });
   }, [preselectedVehicleId, onPreselectHandled]);
 
   const selectedVehicle = useMemo(
@@ -74,8 +81,12 @@ export function LeadForm({
   const duration = calcDurationDays(data.pickupDate, data.returnDate);
   const isPremium =
     (selectedVehicle?.category ?? data.vehicleCategory) === "premium";
+  const hasPricingConfig = !!data.vehicleId && !!getVehiclePricing(data.vehicleId);
+  // When a specific vehicle with pricing config is selected, the RentalEstimator
+  // enforces the vehicle-specific minimum (which counts calendar days inclusively).
+  // Only fall back to the generic premium-category minimum when no priced vehicle is chosen.
   const premiumDurationInvalid =
-    isPremium && duration !== null && duration < PREMIUM_SUV_MIN_DAYS;
+    isPremium && !hasPricingConfig && duration !== null && duration < PREMIUM_SUV_MIN_DAYS;
 
   function update<K extends keyof LeadFormData>(key: K, value: LeadFormData[K]) {
     setData((d) => ({ ...d, [key]: value }));
@@ -89,8 +100,15 @@ export function LeadForm({
     }
     if (s === 1) {
       if (!data.pickupDate || !data.returnDate) return "Please choose pickup and return dates.";
+      if (!data.pickupTime || !data.returnTime) return "Please choose pickup and return times.";
       if (duration === null) return "Return date must be on or after pickup date.";
       if (premiumDurationInvalid) return `Premium SUV rentals require a minimum of ${PREMIUM_SUV_MIN_DAYS} days.`;
+      if (data.vehicleId) {
+        const est = estimateRental(data.vehicleId, data.pickupDate, data.returnDate);
+        if (est && !est.meetsMinimum) {
+          return `This vehicle requires a minimum ${est.minimumDays}-day rental.`;
+        }
+      }
       if (!data.rentalPurpose) return "Please choose a rental purpose.";
     }
     if (s === 2) {
@@ -161,6 +179,7 @@ export function LeadForm({
                     <RentalStep
                       data={data} update={update} duration={duration}
                       isPremium={isPremium} premiumDurationInvalid={premiumDurationInvalid}
+                      pickupDateRef={pickupDateRef}
                     />
                   )}
                   {step === 2 && <QualStep data={data} update={update} />}
@@ -190,7 +209,7 @@ export function LeadForm({
                       onClick={submit} disabled={submitting}
                       className="bg-gold text-gold-foreground hover:bg-gold/90"
                     >
-                      {submitting ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Submitting…</>) : "Submit Rental Request"}
+                      {submitting ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Submitting…</>) : "Request This Rental"}
                     </Button>
                   )}
                 </div>
@@ -306,18 +325,19 @@ function ContactStep({ data, update }: { data: LeadFormData; update: <K extends 
 }
 
 function RentalStep({
-  data, update, duration, isPremium, premiumDurationInvalid,
+  data, update, duration, isPremium, premiumDurationInvalid, pickupDateRef,
 }: {
   data: LeadFormData;
   update: <K extends keyof LeadFormData>(k: K, v: LeadFormData[K]) => void;
   duration: number | null;
   isPremium: boolean;
   premiumDurationInvalid: boolean;
+  pickupDateRef: React.RefObject<HTMLInputElement | null>;
 }) {
   const today = new Date().toISOString().split("T")[0];
   return (
     <div className="space-y-5 rise-in">
-      <StepHeader n="02" title="Rental request" desc="Tell us about the vehicle and dates you need." />
+      <StepHeader n="02" title="Rental request" desc="Tell us about the vehicle, dates, and how you'd like to receive it." />
       <div className="grid gap-4 sm:grid-cols-2">
         <Field label="Desired vehicle">
           <Select value={data.vehicleId || "any"} onValueChange={(v) => {
@@ -355,12 +375,24 @@ function RentalStep({
 
       <div className="grid gap-4 sm:grid-cols-2">
         <Field label="Pickup date">
-          <Input type="date" min={today} value={data.pickupDate} onChange={(e) => update("pickupDate", e.target.value)} />
+          <Input ref={pickupDateRef} type="date" min={today} value={data.pickupDate} onChange={(e) => update("pickupDate", e.target.value)} />
+        </Field>
+        <Field label="Pickup time">
+          <Input type="time" value={data.pickupTime} onChange={(e) => update("pickupTime", e.target.value)} />
         </Field>
         <Field label="Return date">
           <Input type="date" min={data.pickupDate || today} value={data.returnDate} onChange={(e) => update("returnDate", e.target.value)} />
         </Field>
+        <Field label="Return time">
+          <Input type="time" value={data.returnTime} onChange={(e) => update("returnTime", e.target.value)} />
+        </Field>
       </div>
+
+      <RentalEstimator
+        vehicleId={data.vehicleId}
+        pickupDate={data.pickupDate}
+        returnDate={data.returnDate}
+      />
 
       {duration !== null && (
         <div className="rounded-md border border-border bg-secondary/50 px-3 py-2 text-sm text-muted-foreground">
@@ -380,6 +412,26 @@ function RentalStep({
         </div>
       )}
 
+      <Field label="Pickup or delivery preference">
+        <div className="grid grid-cols-2 gap-2">
+          {(["pickup", "delivery"] as const).map((opt) => (
+            <button
+              key={opt}
+              type="button"
+              onClick={() => update("pickupPreference", opt)}
+              className={cn(
+                "rounded-md border px-3 py-2 text-sm font-medium transition",
+                data.pickupPreference === opt
+                  ? "border-gold bg-gold/10 text-foreground"
+                  : "border-border text-muted-foreground hover:text-foreground",
+              )}
+            >
+              {opt === "pickup" ? "I'll pick it up" : "Request delivery"}
+            </button>
+          ))}
+        </div>
+      </Field>
+
       <Field label="Rental purpose">
         <Select value={data.rentalPurpose} onValueChange={(v) => update("rentalPurpose", v)}>
           <SelectTrigger><SelectValue placeholder="Select purpose" /></SelectTrigger>
@@ -389,8 +441,8 @@ function RentalStep({
         </Select>
       </Field>
 
-      <Field label="Pickup location or preferred service area">
-        <Input value={data.pickupArea} onChange={(e) => update("pickupArea", e.target.value)} placeholder="City or neighborhood in Texas" maxLength={120} />
+      <Field label={data.pickupPreference === "delivery" ? "Delivery address or preferred area" : "Pickup location or preferred service area"}>
+        <Input value={data.pickupArea} onChange={(e) => update("pickupArea", e.target.value)} placeholder="City or neighborhood in the DFW area" maxLength={120} />
       </Field>
 
       <Field label="Additional rental notes (optional)">
@@ -459,12 +511,20 @@ function ReviewStep({ data, update, duration }: {
   duration: number | null;
 }) {
   const veh = vehicles.find((v) => v.id === data.vehicleId);
+  const est = data.vehicleId && data.pickupDate && data.returnDate
+    ? estimateRental(data.vehicleId, data.pickupDate, data.returnDate)
+    : null;
   const rows: [string, string][] = [
     ["Name", data.fullName || "—"],
     ["Contact", `${data.phone || "—"} · ${data.email || "—"}`],
     ["Preferred contact", data.contactMethod],
     ["Vehicle", veh?.name || (data.vehicleCategory === "unsure" ? "Not sure yet" : data.vehicleCategory)],
-    ["Dates", `${data.pickupDate || "—"} → ${data.returnDate || "—"}${duration ? ` (${duration} day${duration===1?"":"s"})` : ""}`],
+    ["Dates", `${data.pickupDate || "—"} ${data.pickupTime || ""} → ${data.returnDate || "—"} ${data.returnTime || ""}${duration ? ` (${duration} day${duration===1?"":"s"})` : ""}`],
+    ["Pickup or delivery", data.pickupPreference === "delivery" ? "Delivery requested" : "Customer pickup"],
+    ...(est ? ([[
+      "Estimated rental price",
+      `$${est.baseTotal.toLocaleString("en-US")} (${est.totalDays} day${est.totalDays===1?"":"s"}, estimate only)`,
+    ]] as [string, string][]) : []),
     ["Purpose", data.rentalPurpose || "—"],
     ["Pickup area", data.pickupArea || "—"],
     ["Age requirement", data.meetsAge || "—"],
@@ -472,7 +532,7 @@ function ReviewStep({ data, update, duration }: {
     ["License suspended/expired", data.licenseSuspended || "—"],
     ["Insurance", data.hasInsurance || "—"],
     ["Rented before", data.rentedBefore || "—"],
-    ["Driving history (3y)", data.drivingHistory || "—"],
+    ["Driving history (5y)", data.drivingHistory || "—"],
     ["Will provide docs", data.willProvideDocs || "—"],
     ["Deposit ready", data.depositReady || "—"],
     ["Urgency", data.urgency || "—"],
