@@ -81,8 +81,12 @@ export function LeadForm({
   const duration = calcDurationDays(data.pickupDate, data.returnDate);
   const isPremium =
     (selectedVehicle?.category ?? data.vehicleCategory) === "premium";
+  const hasPricingConfig = !!data.vehicleId && !!getVehiclePricing(data.vehicleId);
+  // When a specific vehicle with pricing config is selected, the RentalEstimator
+  // enforces the vehicle-specific minimum (which counts calendar days inclusively).
+  // Only fall back to the generic premium-category minimum when no priced vehicle is chosen.
   const premiumDurationInvalid =
-    isPremium && duration !== null && duration < PREMIUM_SUV_MIN_DAYS;
+    isPremium && !hasPricingConfig && duration !== null && duration < PREMIUM_SUV_MIN_DAYS;
 
   function update<K extends keyof LeadFormData>(key: K, value: LeadFormData[K]) {
     setData((d) => ({ ...d, [key]: value }));
