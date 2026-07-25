@@ -507,12 +507,20 @@ function ReviewStep({ data, update, duration }: {
   duration: number | null;
 }) {
   const veh = vehicles.find((v) => v.id === data.vehicleId);
+  const est = data.vehicleId && data.pickupDate && data.returnDate
+    ? estimateRental(data.vehicleId, data.pickupDate, data.returnDate)
+    : null;
   const rows: [string, string][] = [
     ["Name", data.fullName || "—"],
     ["Contact", `${data.phone || "—"} · ${data.email || "—"}`],
     ["Preferred contact", data.contactMethod],
     ["Vehicle", veh?.name || (data.vehicleCategory === "unsure" ? "Not sure yet" : data.vehicleCategory)],
-    ["Dates", `${data.pickupDate || "—"} → ${data.returnDate || "—"}${duration ? ` (${duration} day${duration===1?"":"s"})` : ""}`],
+    ["Dates", `${data.pickupDate || "—"} ${data.pickupTime || ""} → ${data.returnDate || "—"} ${data.returnTime || ""}${duration ? ` (${duration} day${duration===1?"":"s"})` : ""}`],
+    ["Pickup or delivery", data.pickupPreference === "delivery" ? "Delivery requested" : "Customer pickup"],
+    ...(est ? ([[
+      "Estimated rental price",
+      `$${est.baseTotal.toLocaleString("en-US")} (${est.totalDays} day${est.totalDays===1?"":"s"}, estimate only)`,
+    ]] as [string, string][]) : []),
     ["Purpose", data.rentalPurpose || "—"],
     ["Pickup area", data.pickupArea || "—"],
     ["Age requirement", data.meetsAge || "—"],
@@ -520,7 +528,7 @@ function ReviewStep({ data, update, duration }: {
     ["License suspended/expired", data.licenseSuspended || "—"],
     ["Insurance", data.hasInsurance || "—"],
     ["Rented before", data.rentedBefore || "—"],
-    ["Driving history (3y)", data.drivingHistory || "—"],
+    ["Driving history (5y)", data.drivingHistory || "—"],
     ["Will provide docs", data.willProvideDocs || "—"],
     ["Deposit ready", data.depositReady || "—"],
     ["Urgency", data.urgency || "—"],
