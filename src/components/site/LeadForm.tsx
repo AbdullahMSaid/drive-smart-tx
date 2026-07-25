@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Bot, ArrowRight, ArrowLeft, Loader2, CheckCircle2, AlertCircle, ClipboardCheck, Sparkles, ListChecks } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,7 +10,9 @@ import {
 } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { SectionHeading } from "./SectionHeading";
+import { RentalEstimator } from "./RentalEstimator";
 import { vehicles, PREMIUM_SUV_MIN_DAYS, MIN_RENTAL_AGE_PLACEHOLDER } from "@/data/vehicles";
+import { estimateRental } from "@/data/pricing";
 import {
   emptyLead,
   calcDurationDays,
