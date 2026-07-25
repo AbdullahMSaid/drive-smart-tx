@@ -205,7 +205,7 @@ export function LeadForm({
                       onClick={submit} disabled={submitting}
                       className="bg-gold text-gold-foreground hover:bg-gold/90"
                     >
-                      {submitting ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Submitting…</>) : "Submit Rental Request"}
+                      {submitting ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Submitting…</>) : "Request This Rental"}
                     </Button>
                   )}
                 </div>
