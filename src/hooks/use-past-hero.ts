@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
  * True once the user has scrolled past the hero area, so the section ribbon
  * can replace the standard header (never both at once).
  */
-export function usePastHero(heroId = "home", headerHeight = 64) {
+export function usePastHero(heroId = "home") {
   const [past, setPast] = useState(false);
 
   useEffect(() => {
@@ -12,9 +12,11 @@ export function usePastHero(heroId = "home", headerHeight = 64) {
     const check = () => {
       frame = 0;
       const hero = document.getElementById(heroId);
+      // Swap near the end of the hero so the ribbon is already in place by the
+      // time the first content section reaches the top of the viewport.
       const threshold = hero
-        ? hero.offsetTop + hero.offsetHeight - headerHeight
-        : window.innerHeight;
+        ? hero.offsetTop + hero.offsetHeight * 0.7
+        : window.innerHeight * 0.7;
       // Hysteresis prevents flicker when both bars would swap at the boundary.
       setPast((prev) => {
         const y = window.scrollY;
