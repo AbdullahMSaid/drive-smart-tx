@@ -12,7 +12,7 @@ const cases = [
 
 export function PremiumUseCases() {
   return (
-    <section id="premium-suvs" className="section-y bg-surface text-surface-foreground">
+    <section id="premium-suvs" className="section-y scroll-mt-32 bg-surface text-surface-foreground">
       <div className="container-x">
         <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6">
           <SectionHeading

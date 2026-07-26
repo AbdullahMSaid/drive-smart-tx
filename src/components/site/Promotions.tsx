@@ -6,7 +6,8 @@ import { Tag } from "lucide-react";
 
 export function Promotions() {
   return (
-    <section id="promotions" className="section-y">
+    <section id="promotions" className="section-y scroll-mt-32">
+      <span id="pricing" className="block scroll-mt-32" aria-hidden="true" />
       <div className="container-x">
         <SectionHeading
           eyebrow="Promotions"

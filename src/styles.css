@@ -113,7 +113,21 @@
 }
 
 @utility section-y {
-  padding-block: 5rem;
+  padding-block: 3.25rem;
+}
+
+@media (min-width: 768px) {
+  .section-y {
+    padding-block: 4.5rem;
+  }
+}
+
+@utility scrollbar-none {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
 }
 
 @keyframes rise {

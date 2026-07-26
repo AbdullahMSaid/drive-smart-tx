@@ -9,7 +9,7 @@ import {
 
 export function Faq() {
   return (
-    <section id="faq" className="section-y">
+    <section id="faq" className="section-y scroll-mt-32">
       <div className="container-x max-w-4xl">
         <SectionHeading
           align="center"

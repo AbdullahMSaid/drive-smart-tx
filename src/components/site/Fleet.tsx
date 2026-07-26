@@ -1,6 +1,7 @@
 import { vehicles, type Vehicle } from "@/data/vehicles";
 import { VehicleCard } from "./VehicleCard";
 import { SectionHeading } from "./SectionHeading";
+import { Categories } from "./Categories";
 
 export function Fleet({ onSelect }: { onSelect: (v: Vehicle) => void }) {
   const economy = vehicles.filter((v) => v.category === "economy");
@@ -8,13 +9,15 @@ export function Fleet({ onSelect }: { onSelect: (v: Vehicle) => void }) {
   const comingSoon = vehicles.filter((v) => v.category === "coming-soon");
 
   return (
-    <section id="fleet" className="section-y bg-background">
+    <section id="fleet" className="section-y scroll-mt-32 bg-background">
       <div className="container-x">
         <SectionHeading
           eyebrow="Featured fleet"
           title="Choose Your Rental"
           subtitle="Our carefully maintained fleet includes reliable economy vehicles, premium luxury sedans, and spacious SUVs for every occasion."
         />
+
+        <Categories />
 
         <FleetGroup
           id="fleet-economy"
@@ -64,7 +67,7 @@ function FleetGroup({
   onSelect: (v: Vehicle) => void;
 }) {
   return (
-    <div id={id} className="mt-14 scroll-mt-24">
+    <div id={id} className="mt-12 scroll-mt-32">
       <div className="mb-6 flex items-baseline justify-between border-b border-border pb-3">
         <h3 className="font-display text-2xl font-semibold text-foreground">{title}</h3>
         <span className="text-xs uppercase tracking-wider text-muted-foreground">
