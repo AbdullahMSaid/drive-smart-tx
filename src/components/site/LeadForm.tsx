@@ -158,7 +158,7 @@ export function LeadForm({
   }
 
   return (
-    <section id="lead-form" className="section-y scroll-mt-20 bg-background">
+    <section id="lead-form" className="section-y scroll-mt-32 bg-background">
       <div className="container-x">
         <SectionHeading
           eyebrow="Check availability"

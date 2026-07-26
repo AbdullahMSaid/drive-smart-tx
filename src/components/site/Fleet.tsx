@@ -67,7 +67,7 @@ function FleetGroup({
   onSelect: (v: Vehicle) => void;
 }) {
   return (
-    <div id={id} className="mt-14 scroll-mt-24">
+    <div id={id} className="mt-12 scroll-mt-32">
       <div className="mb-6 flex items-baseline justify-between border-b border-border pb-3">
         <h3 className="font-display text-2xl font-semibold text-foreground">{title}</h3>
         <span className="text-xs uppercase tracking-wider text-muted-foreground">
