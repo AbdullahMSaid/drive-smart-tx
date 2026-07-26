@@ -13,6 +13,7 @@ import { Faq } from "@/components/site/Faq";
 import { FinalCta } from "@/components/site/FinalCta";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { scrollToId } from "@/lib/scroll";
+import { usePastHero } from "@/hooks/use-past-hero";
 import type { Vehicle } from "@/data/vehicles";
 
 export const Route = createFileRoute("/")({
@@ -21,6 +22,7 @@ export const Route = createFileRoute("/")({
 
 function Landing() {
   const [preselectedId, setPreselectedId] = useState<string | null>(null);
+  const pastHero = usePastHero();
 
   const onSelectVehicle = (v: Vehicle) => {
     setPreselectedId(v.id);
@@ -29,10 +31,10 @@ function Landing() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <SiteNav />
+      <SiteNav hidden={pastHero} />
+      <SectionRibbon visible={pastHero} />
       <main>
         <Hero />
-        <SectionRibbon />
         <Fleet onSelect={onSelectVehicle} />
         <PremiumUseCases />
         <HowItWorks />

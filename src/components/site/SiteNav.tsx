@@ -13,9 +13,13 @@ const NAV = [
   { label: "FAQ", id: "faq" },
 ];
 
-export function SiteNav() {
+export function SiteNav({ hidden = false }: { hidden?: boolean }) {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    if (hidden) setOpen(false);
+  }, [hidden]);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);
@@ -31,11 +35,13 @@ export function SiteNav() {
 
   return (
     <header
+      aria-hidden={hidden}
       className={cn(
-        "fixed inset-x-0 top-0 z-50 transition-all duration-300",
+        "fixed inset-x-0 top-0 z-50 transition-all duration-300 ease-out",
         scrolled
           ? "bg-background/85 backdrop-blur-md border-b border-border/70"
           : "bg-transparent",
+        hidden && "-translate-y-full opacity-0 pointer-events-none",
       )}
     >
       <div className="container-x flex h-16 items-center justify-between gap-4">
