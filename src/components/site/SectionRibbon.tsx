@@ -2,16 +2,17 @@ import { useEffect, useRef, useState } from "react";
 import { scrollToId } from "@/lib/scroll";
 import { cn } from "@/lib/utils";
 
+/** Mobile shows only the top-priority destinations; desktop adds the rest. */
 const LINKS = [
-  { label: "Fleet", id: "fleet" },
-  { label: "Pricing", id: "pricing" },
-  { label: "Premium SUVs", id: "premium-suvs" },
-  { label: "FAQ", id: "faq" },
-  { label: "Service Area", id: "service-area" },
-  { label: "Contact", id: "contact" },
+  { label: "Fleet", id: "fleet", primary: true },
+  { label: "Pricing", id: "pricing", primary: true },
+  { label: "Premium SUVs", id: "premium-suvs", primary: false },
+  { label: "FAQ", id: "faq", primary: true },
+  { label: "Service Area", id: "service-area", primary: false },
+  { label: "Contact", id: "contact", primary: false },
 ];
 
-export function SectionRibbon() {
+export function SectionRibbon({ visible }: { visible: boolean }) {
   const [active, setActive] = useState<string>("fleet");
   const listRef = useRef<HTMLDivElement>(null);
 
@@ -39,29 +40,33 @@ export function SectionRibbon() {
     };
   }, []);
 
-  // Keep the active chip in view on mobile.
-  useEffect(() => {
-    const el = listRef.current?.querySelector<HTMLElement>(`[data-id="${active}"]`);
-    el?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
-  }, [active]);
-
   return (
-    <div className="sticky top-16 z-40 border-y border-border/70 bg-background/85 backdrop-blur-md">
-      <div className="container-x flex items-center gap-3">
+    <div
+      aria-hidden={!visible}
+      className={cn(
+        "fixed inset-x-0 top-0 z-50 border-b border-border/70 bg-background/90 backdrop-blur-md transition-all duration-300 ease-out",
+        visible
+          ? "translate-y-0 opacity-100"
+          : "-translate-y-full opacity-0 pointer-events-none",
+      )}
+    >
+      <div className="container-x flex h-14 items-center justify-between gap-2 lg:h-auto lg:gap-3">
         <div
           ref={listRef}
-          className="flex-1 flex items-center gap-1 overflow-x-auto scrollbar-none py-2 lg:py-0"
+          className="flex min-w-0 flex-1 items-center gap-1.5 lg:gap-1"
         >
           {LINKS.map((l) => (
             <button
               key={l.id}
               data-id={l.id}
+              tabIndex={visible ? 0 : -1}
               onClick={() => scrollToId(l.id)}
               aria-current={active === l.id ? "true" : undefined}
               className={cn(
-                "shrink-0 rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors lg:rounded-none lg:border-0 lg:border-b-2 lg:px-3 lg:py-3",
+                "shrink-0 rounded-full border px-3 py-1.5 text-[13px] font-medium transition-colors lg:rounded-none lg:border-0 lg:border-b-2 lg:px-3 lg:py-3 lg:text-sm",
+                !l.primary && "hidden lg:inline-flex",
                 active === l.id
-                  ? "border-gold/50 bg-gold/12 text-gold lg:bg-transparent lg:border-gold"
+                  ? "border-gold/50 bg-gold/12 text-gold lg:border-gold lg:bg-transparent"
                   : "border-border/60 text-muted-foreground hover:text-foreground lg:border-transparent",
               )}
             >
@@ -71,7 +76,8 @@ export function SectionRibbon() {
         </div>
         <button
           onClick={() => scrollToId("lead-form")}
-          className="my-2 shrink-0 rounded-full bg-gold px-4 py-1.5 text-sm font-semibold text-gold-foreground transition hover:bg-gold/90 lg:px-5"
+          tabIndex={visible ? 0 : -1}
+          className="shrink-0 rounded-full bg-gold px-4 py-1.5 text-[13px] font-semibold text-gold-foreground transition hover:bg-gold/90 lg:my-2 lg:px-5 lg:text-sm"
         >
           Book Now
         </button>
