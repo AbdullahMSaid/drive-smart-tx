@@ -36,7 +36,7 @@ export function usePastHero(heroId = "home") {
       window.removeEventListener("resize", onScroll);
       if (frame) cancelAnimationFrame(frame);
     };
-  }, [heroId, headerHeight]);
+  }, [heroId]);
 
   return past;
 }
