@@ -6,7 +6,7 @@ import { RentalPolicyDialog } from "./RentalPolicyDialog";
 
 export function SiteFooter() {
   return (
-    <footer className="border-t border-border bg-background">
+    <footer id="contact" className="scroll-mt-32 border-t border-border bg-background">
       <div className="container-x py-14">
         <div className="grid gap-10 md:grid-cols-4">
           <div>
@@ -43,7 +43,7 @@ export function SiteFooter() {
                 <Mail className="h-4 w-4 mt-0.5 text-gold shrink-0" />
                 <a href="mailto:royaltylux8@gmail.com" className="hover:text-gold transition-colors break-all">royaltylux8@gmail.com</a>
               </li>
-              <li className="flex items-start gap-2"><MapPin className="h-4 w-4 mt-0.5 text-gold shrink-0" /><span>5502 Denton Dr, Dallas, TX 75235 · Serving the DFW area</span></li>
+              <li id="service-area" className="flex items-start gap-2 scroll-mt-32"><MapPin className="h-4 w-4 mt-0.5 text-gold shrink-0" /><span>5502 Denton Dr, Dallas, TX 75235 · Serving the DFW area</span></li>
               <li className="flex items-start gap-2"><Clock className="h-4 w-4 mt-0.5 text-gold shrink-0" /><span>Mon–Sat · Hours available on request</span></li>
             </ul>
           </div>

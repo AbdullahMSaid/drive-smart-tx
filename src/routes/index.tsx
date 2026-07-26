@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { SiteNav } from "@/components/site/SiteNav";
 import { Hero } from "@/components/site/Hero";
-import { Categories } from "@/components/site/Categories";
+import { SectionRibbon } from "@/components/site/SectionRibbon";
 import { Fleet } from "@/components/site/Fleet";
 import { PremiumUseCases } from "@/components/site/PremiumUseCases";
 import { HowItWorks } from "@/components/site/HowItWorks";
@@ -32,7 +32,7 @@ function Landing() {
       <SiteNav />
       <main>
         <Hero />
-        <Categories />
+        <SectionRibbon />
         <Fleet onSelect={onSelectVehicle} />
         <PremiumUseCases />
         <HowItWorks />

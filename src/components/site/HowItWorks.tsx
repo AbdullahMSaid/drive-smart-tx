@@ -41,9 +41,6 @@ export function HowItWorks() {
             );
           })}
         </div>
-        <p className="mt-8 text-center text-sm text-muted-foreground">
-          Submitting a request does not guarantee approval or confirm a reservation.
-        </p>
       </div>
     </section>
   );
