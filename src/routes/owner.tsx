@@ -121,7 +121,7 @@ function LoginScreen() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4 py-16">
       <div className="w-full max-w-sm rounded-2xl border border-border/60 bg-card p-8 shadow-xl">
-        <img src={logoAsset.src} alt="Royalty Luxury Transportation Services" className="mx-auto h-16 w-auto" />
+        <img src={logoAsset.url} alt="Royalty Luxury Transportation Services" className="mx-auto h-16 w-auto" />
         <h1 className="mt-6 text-center font-display text-2xl font-semibold text-foreground">
           Owner Portal
         </h1>
@@ -217,7 +217,7 @@ function Dashboard() {
       <header className="sticky top-0 z-40 border-b border-border/60 bg-card/95 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3">
           <div className="flex items-center gap-3">
-            <img src={logoAsset.src} alt="" className="h-9 w-auto" />
+            <img src={logoAsset.url} alt="" className="h-9 w-auto" />
             <span className="hidden font-display text-sm font-semibold text-foreground sm:inline">
               Owner Portal
             </span>
