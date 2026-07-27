@@ -96,12 +96,12 @@ export function SectionRibbon({ visible }: { visible: boolean }) {
               data-id={l.id}
               tabIndex={visible ? 0 : -1}
               onClick={() => scrollToId(l.id)}
-              aria-current={active === l.id ? "true" : undefined}
+              aria-current={shownActive === l.id ? "true" : undefined}
               className={cn(
                 "shrink-0 rounded-full border px-3 py-1.5 text-[13px] font-medium transition-colors lg:rounded-none lg:border-0 lg:border-b-2 lg:px-3 lg:py-3 lg:text-sm",
                 !l.primary && "hidden lg:inline-flex",
-                active === l.id
-                  ? "border-gold/50 bg-gold/12 text-gold lg:border-gold lg:bg-transparent"
+                shownActive === l.id
+                  ? "border-gold/50 bg-gold/15 text-gold lg:border-gold lg:bg-transparent lg:text-gold"
                   : "border-border/60 text-muted-foreground hover:text-foreground lg:border-transparent",
               )}
             >
