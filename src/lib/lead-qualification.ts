@@ -76,6 +76,8 @@ export type QualStatus =
 export interface QualifiedLead {
   submissionId: string;
   submittedAt: string;
+  /** rental_leads.id, set once the lead is persisted. */
+  leadId?: string;
   data: LeadFormData;
   vehicleName: string | null;
   rentalDurationDays: number | null;
@@ -240,73 +242,87 @@ export function qualifyLead(
   };
 }
 
-// Persistence — Supabase (rental_leads + qualification_results).
+// Persistence — Supabase (schema v2: rental_leads + qualification_results).
+//
+// RLS on rental_leads allows anon INSERT only (no SELECT), so the row id is
+// generated client-side and reused instead of relying on `.select()` after
+// insert.
 export async function saveLead(lead: QualifiedLead): Promise<void> {
   const d = lead.data;
+  const leadId = crypto.randomUUID();
 
-  const { data: inserted, error: leadError } = await supabase
-    .from("rental_leads")
-    .insert({
-      submission_id: lead.submissionId,
-      submitted_at: lead.submittedAt,
+  const { error } = await supabase.from("rental_leads").insert({
+    id: leadId,
+    submission_id: lead.submissionId,
+    submitted_at: lead.submittedAt,
 
-      full_name: d.fullName,
-      phone: d.phone,
-      email: d.email,
-      contact_method: d.contactMethod,
+    // Step 0: Contact
+    full_name: d.fullName,
+    phone: d.phone,
+    email: d.email,
+    contact_method: d.contactMethod,
 
-      vehicle_id: d.vehicleId || null,
-      vehicle_name: lead.vehicleName,
-      vehicle_category: d.vehicleCategory,
-      pickup_date: d.pickupDate || null,
-      pickup_time: d.pickupTime || null,
-      return_date: d.returnDate || null,
-      return_time: d.returnTime || null,
-      pickup_preference: d.pickupPreference,
-      rental_purpose: d.rentalPurpose || null,
-      pickup_area: d.pickupArea || null,
-      notes: d.notes || null,
-      rental_duration_days: lead.rentalDurationDays,
+    // Step 1: Rental
+    vehicle_id: d.vehicleId || null,
+    vehicle_name: lead.vehicleName,
+    vehicle_category: d.vehicleCategory,
+    pickup_date: d.pickupDate,
+    pickup_time: d.pickupTime,
+    return_date: d.returnDate,
+    return_time: d.returnTime,
+    rental_duration_days: lead.rentalDurationDays,
+    pickup_preference: d.pickupPreference,
+    rental_purpose: d.rentalPurpose,
+    pickup_area: d.pickupArea || null,
+    notes: d.notes || null,
 
-      meets_age: d.meetsAge || null,
-      has_license: d.hasLicense || null,
-      license_suspended: d.licenseSuspended || null,
-      has_insurance: d.hasInsurance || null,
-      rented_before: d.rentedBefore || null,
-      driving_history: d.drivingHistory || null,
-      will_provide_docs: d.willProvideDocs || null,
-      deposit_ready: d.depositReady || null,
-      urgency: d.urgency || null,
+    // Step 2: Qualification (raw answers)
+    meets_age: d.meetsAge,
+    has_license: d.hasLicense,
+    license_suspended: d.licenseSuspended,
+    has_insurance: d.hasInsurance,
+    rented_before: d.rentedBefore,
+    driving_history: d.drivingHistory,
+    will_provide_docs: d.willProvideDocs,
+    deposit_ready: d.depositReady,
+    urgency: d.urgency,
 
-      consent_not_reservation: d.consentNotReservation,
-      consent_contact: d.consentContact,
-      consent_accurate: d.consentAccurate,
-    })
-    .select("id")
-    .single();
-
-  if (leadError || !inserted) {
-    throw new Error(leadError?.message ?? "Unable to save your request.");
-  }
-
-  const { error: qualError } = await supabase.from("qualification_results").insert({
-    lead_id: inserted.id,
-    status: lead.status,
-    score: lead.score,
-    positive_signals: lead.positiveSignals,
-    risk_flags: lead.riskFlags,
-    missing_info: lead.missingInfo,
-    recommended_next_action: lead.recommendedNextAction,
-    summary: lead.summary,
+    // Step 3: Review consent
+    consent_not_reservation: d.consentNotReservation,
+    consent_contact: d.consentContact,
+    consent_accurate: d.consentAccurate,
   });
 
-  if (qualError) {
-    throw new Error(qualError.message);
-  }
+  if (error) throw new Error(error.message);
+
+  lead.leadId = leadId;
 }
 
 export async function runAiLeadQualification(lead: QualifiedLead): Promise<QualifiedLead> {
-  // Deterministic result for now; AI enrichment would run server-side.
+  // No model call yet — persist the deterministic qualifyLead() output and
+  // return it unchanged.
+  if (lead.leadId) {
+    const { error } = await supabase.from("qualification_results").insert({
+      lead_id: lead.leadId,
+      rule_status: lead.status,
+      rule_score: lead.score,
+      rule_positive_signals: lead.positiveSignals,
+      rule_risk_flags: lead.riskFlags,
+      rule_missing_info: lead.missingInfo,
+      rule_recommended_action: lead.recommendedNextAction,
+      rule_summary: lead.summary,
+    });
+
+    // qualification_results has RLS enabled with no anon policy, so this write
+    // is expected to be rejected from the browser until the pipeline runs
+    // server-side with the service_role key. Never fail the user's submission
+    // because of it — the lead itself is already saved.
+    if (error) {
+      console.warn("[qualification_results] insert skipped:", error.message);
+    }
+  }
+
   return lead;
 }
+
 
