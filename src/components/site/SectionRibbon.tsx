@@ -12,9 +12,26 @@ const LINKS = [
   { label: "Contact", id: "contact", primary: false },
 ];
 
+/** When a desktop-only section is active, highlight this mobile chip instead. */
+const MOBILE_FALLBACK: Record<string, string> = {
+  "premium-suvs": "fleet",
+  "service-area": "faq",
+  contact: "faq",
+};
+
 export function SectionRibbon({ visible }: { visible: boolean }) {
   const [active, setActive] = useState<string>("fleet");
+  const [isMobile, setIsMobile] = useState(false);
   const listRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 1023px)");
+    const sync = () => setIsMobile(mq.matches);
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, []);
+
 
   useEffect(() => {
     let frame = 0;
