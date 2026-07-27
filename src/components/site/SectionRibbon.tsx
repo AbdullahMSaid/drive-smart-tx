@@ -23,11 +23,25 @@ export function SectionRibbon({ visible }: { visible: boolean }) {
       frame = requestAnimationFrame(() => {
         frame = 0;
         const marker = window.innerHeight * 0.35;
+        // Pick the section closest to (but above) the marker, independent of
+        // the order links are declared in — some anchors are zero-height
+        // markers whose document order differs from the link list.
         let current = LINKS[0].id;
+        let bestTop = -Infinity;
         for (const l of LINKS) {
           const el = document.getElementById(l.id);
           if (!el) continue;
-          if (el.getBoundingClientRect().top <= marker) current = l.id;
+          const top = el.getBoundingClientRect().top;
+          if (top <= marker && top > bestTop) {
+            bestTop = top;
+            current = l.id;
+          }
+        }
+        // Near the bottom of the page the last section may never cross the
+        // marker; force the final link active.
+        if (window.innerHeight + window.scrollY >= document.body.scrollHeight - 4) {
+          const last = [...LINKS].reverse().find((l) => document.getElementById(l.id));
+          if (last) current = last.id;
         }
         setActive((prev) => (prev === current ? prev : current));
       });
