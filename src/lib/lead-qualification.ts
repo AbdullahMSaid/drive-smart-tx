@@ -76,6 +76,8 @@ export type QualStatus =
 export interface QualifiedLead {
   submissionId: string;
   submittedAt: string;
+  /** rental_leads.id, set once the lead is persisted. */
+  leadId?: string;
   data: LeadFormData;
   vehicleName: string | null;
   rentalDurationDays: number | null;
