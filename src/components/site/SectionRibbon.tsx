@@ -71,7 +71,11 @@ export function SectionRibbon({ visible }: { visible: boolean }) {
     };
   }, []);
 
+  const shownActive =
+    isMobile && MOBILE_FALLBACK[active] ? MOBILE_FALLBACK[active] : active;
+
   return (
+
     <div
       aria-hidden={!visible}
       className={cn(
