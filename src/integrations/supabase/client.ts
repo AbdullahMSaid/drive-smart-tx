@@ -7,9 +7,13 @@ const SUPABASE_PUBLISHABLE_KEY =
   import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ??
   "sb_publishable_fOTeEO5Wo_xtOv7sCJzXXw_VnZUVJEA";
 
+const isBrowser = typeof window !== "undefined";
+
 export const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
   auth: {
-    persistSession: false,
-    autoRefreshToken: false,
+    // Owner portal needs a persisted session; SSR must stay stateless.
+    persistSession: isBrowser,
+    autoRefreshToken: isBrowser,
+    storage: isBrowser ? window.localStorage : undefined,
   },
 });
