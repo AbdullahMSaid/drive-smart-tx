@@ -12,9 +12,26 @@ const LINKS = [
   { label: "Contact", id: "contact", primary: false },
 ];
 
+/** When a desktop-only section is active, highlight this mobile chip instead. */
+const MOBILE_FALLBACK: Record<string, string> = {
+  "premium-suvs": "fleet",
+  "service-area": "faq",
+  contact: "faq",
+};
+
 export function SectionRibbon({ visible }: { visible: boolean }) {
   const [active, setActive] = useState<string>("fleet");
+  const [isMobile, setIsMobile] = useState(false);
   const listRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 1023px)");
+    const sync = () => setIsMobile(mq.matches);
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, []);
+
 
   useEffect(() => {
     let frame = 0;
@@ -23,11 +40,25 @@ export function SectionRibbon({ visible }: { visible: boolean }) {
       frame = requestAnimationFrame(() => {
         frame = 0;
         const marker = window.innerHeight * 0.35;
+        // Pick the section closest to (but above) the marker, independent of
+        // the order links are declared in — some anchors are zero-height
+        // markers whose document order differs from the link list.
         let current = LINKS[0].id;
+        let bestTop = -Infinity;
         for (const l of LINKS) {
           const el = document.getElementById(l.id);
           if (!el) continue;
-          if (el.getBoundingClientRect().top <= marker) current = l.id;
+          const top = el.getBoundingClientRect().top;
+          if (top <= marker && top > bestTop) {
+            bestTop = top;
+            current = l.id;
+          }
+        }
+        // Near the bottom of the page the last section may never cross the
+        // marker; force the final link active.
+        if (window.innerHeight + window.scrollY >= document.body.scrollHeight - 4) {
+          const last = [...LINKS].reverse().find((l) => document.getElementById(l.id));
+          if (last) current = last.id;
         }
         setActive((prev) => (prev === current ? prev : current));
       });
@@ -40,7 +71,11 @@ export function SectionRibbon({ visible }: { visible: boolean }) {
     };
   }, []);
 
+  const shownActive =
+    isMobile && MOBILE_FALLBACK[active] ? MOBILE_FALLBACK[active] : active;
+
   return (
+
     <div
       aria-hidden={!visible}
       className={cn(
@@ -61,12 +96,12 @@ export function SectionRibbon({ visible }: { visible: boolean }) {
               data-id={l.id}
               tabIndex={visible ? 0 : -1}
               onClick={() => scrollToId(l.id)}
-              aria-current={active === l.id ? "true" : undefined}
+              aria-current={shownActive === l.id ? "true" : undefined}
               className={cn(
                 "shrink-0 rounded-full border px-3 py-1.5 text-[13px] font-medium transition-colors lg:rounded-none lg:border-0 lg:border-b-2 lg:px-3 lg:py-3 lg:text-sm",
                 !l.primary && "hidden lg:inline-flex",
-                active === l.id
-                  ? "border-gold/50 bg-gold/12 text-gold lg:border-gold lg:bg-transparent"
+                shownActive === l.id
+                  ? "border-gold/50 bg-gold/15 text-gold lg:border-gold lg:bg-transparent lg:text-gold"
                   : "border-border/60 text-muted-foreground hover:text-foreground lg:border-transparent",
               )}
             >
