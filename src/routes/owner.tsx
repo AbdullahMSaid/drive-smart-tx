@@ -175,16 +175,40 @@ function Dashboard() {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [blocked, setBlocked] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
+    setBlocked(false);
+
     const { data, error } = await supabase
       .from("rental_leads")
       .select("*")
       .order("submitted_at", { ascending: false });
-    if (error) setError(error.message);
+
+    if (error) {
+      setError(describeError(error));
+      setBlocked(isAccessError(error));
+      setLeads([]);
+      setLoading(false);
+      return;
+    }
+
+    // RLS returns zero rows with no error when the owner has no SELECT policy,
+    // which looks identical to an empty table. Probe with an exact count to tell
+    // the two apart.
+    if ((data ?? []).length === 0) {
+      const probe = await supabase
+        .from("rental_leads")
+        .select("*", { count: "exact", head: true });
+      if (probe.error) {
+        setError(describeError(probe.error));
+        setBlocked(isAccessError(probe.error));
+      }
+    }
+
     setLeads(data ?? []);
     setLoading(false);
   }, []);
@@ -192,6 +216,7 @@ function Dashboard() {
   useEffect(() => {
     load();
   }, [load]);
+
 
   const selected = useMemo(
     () => leads.find((l) => l.id === selectedId) ?? null,
