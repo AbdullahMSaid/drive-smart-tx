@@ -66,6 +66,33 @@ function fmtDateTime(v?: string | null) {
 const val = (v: any) => (v === null || v === undefined || v === "" ? "—" : String(v));
 const yesNo = (v: any) => (v === true ? "Yes" : v === false ? "No" : val(v));
 
+const SETUP_HINT =
+  "Owner access isn't configured in the database yet — run supabase/owner-portal.sql in the Supabase SQL Editor to grant the owner read/update access.";
+
+/** Permission / missing-grant errors, as opposed to genuine query failures. */
+function isAccessError(err: { code?: string; message?: string } | null) {
+  if (!err) return false;
+  const code = err.code ?? "";
+  const msg = (err.message ?? "").toLowerCase();
+  return (
+    code === "42501" || // insufficient_privilege (missing GRANT)
+    code === "PGRST301" || // JWT / role not permitted
+    code === "42P01" || // relation not exposed to this role
+    msg.includes("permission denied") ||
+    msg.includes("row-level security")
+  );
+}
+
+function describeError(err: { code?: string; message?: string; hint?: string; details?: string }) {
+  const parts = [err.message ?? "Request failed"];
+  if (err.code) parts.push(`(code ${err.code})`);
+  if (err.hint) parts.push(`Hint: ${err.hint}`);
+  else if (err.details) parts.push(err.details);
+  const base = parts.join(" ");
+  return isAccessError(err) ? `${SETUP_HINT}\n\n${base}` : base;
+}
+
+
 function OwnerPortal() {
   const [session, setSession] = useState<Session | null>(null);
   const [ready, setReady] = useState(false);
