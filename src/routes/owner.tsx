@@ -256,7 +256,8 @@ function Dashboard() {
     const { error } = await supabase.from("rental_leads").update({ lead_status }).eq("id", id);
     if (error) {
       setLeads(prev);
-      setError(error.message);
+      setError(describeError(error));
+
     }
   };
 
