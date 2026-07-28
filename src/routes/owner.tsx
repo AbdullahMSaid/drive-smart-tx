@@ -345,11 +345,13 @@ function StatusSelect({
 function LeadList({
   leads,
   loading,
+  blocked,
   onOpen,
   onStatusChange,
 }: {
   leads: Lead[];
   loading: boolean;
+  blocked?: boolean;
   onOpen: (id: string) => void;
   onStatusChange: (id: string, status: string) => void;
 }) {
@@ -359,16 +361,32 @@ function LeadList({
         <div>
           <h1 className="font-display text-2xl font-semibold text-foreground">Leads</h1>
           <p className="text-sm text-muted-foreground">
-            {loading ? "Loading…" : `${leads.length} submission${leads.length === 1 ? "" : "s"}, newest first`}
+            {loading
+              ? "Loading…"
+              : blocked
+                ? "Unable to read leads"
+                : `${leads.length} submission${leads.length === 1 ? "" : "s"}, newest first`}
           </p>
         </div>
       </div>
 
       {!loading && leads.length === 0 && (
-        <p className="rounded-lg border border-border/60 bg-card p-8 text-center text-sm text-muted-foreground">
-          No leads yet.
-        </p>
+        <div className="rounded-lg border border-border/60 bg-card p-8 text-center text-sm text-muted-foreground">
+          {blocked ? (
+            <>
+              <p className="font-medium text-foreground">Owner access isn't configured yet</p>
+              <p className="mx-auto mt-2 max-w-md">
+                The database is blocking reads for your account. Run{" "}
+                <code className="rounded bg-accent px-1 py-0.5 text-xs">supabase/owner-portal.sql</code>{" "}
+                in the Supabase SQL Editor, then refresh.
+              </p>
+            </>
+          ) : (
+            "No leads yet."
+          )}
+        </div>
       )}
+
 
       {/* Mobile cards */}
       <div className="space-y-3 md:hidden">
