@@ -66,6 +66,33 @@ function fmtDateTime(v?: string | null) {
 const val = (v: any) => (v === null || v === undefined || v === "" ? "—" : String(v));
 const yesNo = (v: any) => (v === true ? "Yes" : v === false ? "No" : val(v));
 
+const SETUP_HINT =
+  "Owner access isn't configured in the database yet — run supabase/owner-portal.sql in the Supabase SQL Editor to grant the owner read/update access.";
+
+/** Permission / missing-grant errors, as opposed to genuine query failures. */
+function isAccessError(err: { code?: string; message?: string } | null) {
+  if (!err) return false;
+  const code = err.code ?? "";
+  const msg = (err.message ?? "").toLowerCase();
+  return (
+    code === "42501" || // insufficient_privilege (missing GRANT)
+    code === "PGRST301" || // JWT / role not permitted
+    code === "42P01" || // relation not exposed to this role
+    msg.includes("permission denied") ||
+    msg.includes("row-level security")
+  );
+}
+
+function describeError(err: { code?: string; message?: string; hint?: string; details?: string }) {
+  const parts = [err.message ?? "Request failed"];
+  if (err.code) parts.push(`(code ${err.code})`);
+  if (err.hint) parts.push(`Hint: ${err.hint}`);
+  else if (err.details) parts.push(err.details);
+  const base = parts.join(" ");
+  return isAccessError(err) ? `${SETUP_HINT}\n\n${base}` : base;
+}
+
+
 function OwnerPortal() {
   const [session, setSession] = useState<Session | null>(null);
   const [ready, setReady] = useState(false);
@@ -175,16 +202,40 @@ function Dashboard() {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [blocked, setBlocked] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
+    setBlocked(false);
+
     const { data, error } = await supabase
       .from("rental_leads")
       .select("*")
       .order("submitted_at", { ascending: false });
-    if (error) setError(error.message);
+
+    if (error) {
+      setError(describeError(error));
+      setBlocked(isAccessError(error));
+      setLeads([]);
+      setLoading(false);
+      return;
+    }
+
+    // RLS returns zero rows with no error when the owner has no SELECT policy,
+    // which looks identical to an empty table. Probe with an exact count to tell
+    // the two apart.
+    if ((data ?? []).length === 0) {
+      const probe = await supabase
+        .from("rental_leads")
+        .select("*", { count: "exact", head: true });
+      if (probe.error) {
+        setError(describeError(probe.error));
+        setBlocked(isAccessError(probe.error));
+      }
+    }
+
     setLeads(data ?? []);
     setLoading(false);
   }, []);
@@ -192,6 +243,7 @@ function Dashboard() {
   useEffect(() => {
     load();
   }, [load]);
+
 
   const selected = useMemo(
     () => leads.find((l) => l.id === selectedId) ?? null,
@@ -204,7 +256,8 @@ function Dashboard() {
     const { error } = await supabase.from("rental_leads").update({ lead_status }).eq("id", id);
     if (error) {
       setLeads(prev);
-      setError(error.message);
+      setError(describeError(error));
+
     }
   };
 
@@ -238,7 +291,7 @@ function Dashboard() {
 
       <main className="mx-auto max-w-6xl px-4 py-8">
         {error && (
-          <p role="alert" className="mb-4 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+          <p role="alert" className="mb-4 whitespace-pre-line rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
             {error}
           </p>
         )}
@@ -253,10 +306,12 @@ function Dashboard() {
           <LeadList
             leads={leads}
             loading={loading}
+            blocked={blocked}
             onOpen={setSelectedId}
             onStatusChange={updateStatus}
           />
         )}
+
       </main>
     </div>
   );
@@ -290,11 +345,13 @@ function StatusSelect({
 function LeadList({
   leads,
   loading,
+  blocked,
   onOpen,
   onStatusChange,
 }: {
   leads: Lead[];
   loading: boolean;
+  blocked?: boolean;
   onOpen: (id: string) => void;
   onStatusChange: (id: string, status: string) => void;
 }) {
@@ -304,16 +361,32 @@ function LeadList({
         <div>
           <h1 className="font-display text-2xl font-semibold text-foreground">Leads</h1>
           <p className="text-sm text-muted-foreground">
-            {loading ? "Loading…" : `${leads.length} submission${leads.length === 1 ? "" : "s"}, newest first`}
+            {loading
+              ? "Loading…"
+              : blocked
+                ? "Unable to read leads"
+                : `${leads.length} submission${leads.length === 1 ? "" : "s"}, newest first`}
           </p>
         </div>
       </div>
 
       {!loading && leads.length === 0 && (
-        <p className="rounded-lg border border-border/60 bg-card p-8 text-center text-sm text-muted-foreground">
-          No leads yet.
-        </p>
+        <div className="rounded-lg border border-border/60 bg-card p-8 text-center text-sm text-muted-foreground">
+          {blocked ? (
+            <>
+              <p className="font-medium text-foreground">Owner access isn't configured yet</p>
+              <p className="mx-auto mt-2 max-w-md">
+                The database is blocking reads for your account. Run{" "}
+                <code className="rounded bg-accent px-1 py-0.5 text-xs">supabase/owner-portal.sql</code>{" "}
+                in the Supabase SQL Editor, then refresh.
+              </p>
+            </>
+          ) : (
+            "No leads yet."
+          )}
+        </div>
       )}
+
 
       {/* Mobile cards */}
       <div className="space-y-3 md:hidden">
