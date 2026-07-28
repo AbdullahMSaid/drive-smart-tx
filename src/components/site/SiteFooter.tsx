@@ -85,9 +85,17 @@ export function SiteFooter() {
           Vehicle availability, eligibility, pricing, deposits, insurance requirements, and final rental terms are
           subject to review and confirmation. Submitting an inquiry does not create a confirmed reservation.
         </div>
-        <div className="mt-4 text-xs text-muted-foreground">
-          © {new Date().getFullYear()} Royalty Luxury Transportation Services. All rights reserved.
+        <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+          <span>© {new Date().getFullYear()} Royalty Luxury Transportation Services. All rights reserved.</span>
+          <Link
+            to="/owner"
+            rel="nofollow"
+            className="text-muted-foreground/60 hover:text-gold transition-colors"
+          >
+            Owner Login
+          </Link>
         </div>
+
       </div>
     </footer>
   );
