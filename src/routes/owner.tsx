@@ -291,7 +291,7 @@ function Dashboard() {
 
       <main className="mx-auto max-w-6xl px-4 py-8">
         {error && (
-          <p role="alert" className="mb-4 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+          <p role="alert" className="mb-4 whitespace-pre-line rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
             {error}
           </p>
         )}
@@ -306,10 +306,12 @@ function Dashboard() {
           <LeadList
             leads={leads}
             loading={loading}
+            blocked={blocked}
             onOpen={setSelectedId}
             onStatusChange={updateStatus}
           />
         )}
+
       </main>
     </div>
   );
