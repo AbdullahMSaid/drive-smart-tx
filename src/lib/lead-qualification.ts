@@ -5,6 +5,7 @@ export type YesNo = "yes" | "no";
 export type YesNoMaybe = "yes" | "no" | "unsure";
 export type ContactMethod = "phone" | "text" | "email";
 export type PickupPreference = "pickup" | "delivery";
+export type IncomeSource = "employed" | "self-employed" | "uber" | "lyft" | "other";
 
 export interface LeadFormData {
   fullName: string;
@@ -23,12 +24,18 @@ export interface LeadFormData {
   pickupArea: string;
   notes: string;
 
-  meetsAge: YesNo | "";
+  /** Exact age in years, entered as text and parsed for qualification. */
+  age: string;
   hasLicense: YesNo | "";
   licenseSuspended: YesNo | "";
   hasInsurance: YesNoMaybe | "";
   rentedBefore: YesNo | "";
   drivingHistory: "no" | "yes" | "discuss" | "";
+  incomeSource: IncomeSource | "";
+  proofOfIncome: YesNo | "";
+  firstWeekPayment: YesNo | "";
+  additionalDriver: YesNo | "";
+  agreesToAgreement: YesNo | "";
   willProvideDocs: YesNo | "";
   depositReady: "yes" | "no" | "need-pricing" | "";
   urgency: "immediate" | "within-week" | "within-two-weeks" | "later" | "researching" | "";
@@ -37,6 +44,7 @@ export interface LeadFormData {
   consentContact: boolean;
   consentAccurate: boolean;
 }
+
 
 export const emptyLead: LeadFormData = {
   fullName: "",
