@@ -19,9 +19,12 @@ import {
   qualifyLead,
   saveLead,
   runAiLeadQualification,
+  INCOME_SOURCE_LABELS,
+  type IncomeSource,
   type LeadFormData,
   type QualifiedLead,
 } from "@/lib/lead-qualification";
+
 import { cn } from "@/lib/utils";
 
 const PURPOSES = [
