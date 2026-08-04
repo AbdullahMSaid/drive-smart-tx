@@ -151,8 +151,50 @@ export function LeadForm({
     try {
       const initial = qualifyLead(data, selectedVehicle);
       await saveLead(initial);
+      // Test notification email (Resend). Never block or fail the submission.
+      try {
+        const res = await sendLeadTestEmail({
+          data: {
+            submissionId: initial.submissionId,
+            submittedAt: initial.submittedAt,
+            vehicleName: initial.vehicleName,
+            rentalDurationDays: initial.rentalDurationDays,
+            fields: [
+              { label: "Name", value: data.fullName },
+              { label: "Phone", value: data.phone },
+              { label: "Email", value: data.email },
+              { label: "Preferred contact", value: data.contactMethod },
+              { label: "Vehicle category", value: data.vehicleCategory },
+              { label: "Pickup", value: `${data.pickupDate} ${data.pickupTime}` },
+              { label: "Return", value: `${data.returnDate} ${data.returnTime}` },
+              { label: "Pickup preference", value: data.pickupPreference },
+              { label: "Pickup area", value: data.pickupArea },
+              { label: "Purpose", value: data.rentalPurpose },
+              { label: "Age", value: data.age },
+              { label: "Valid license", value: data.hasLicense },
+              { label: "License suspended", value: data.licenseSuspended },
+              { label: "Has insurance", value: data.hasInsurance },
+              { label: "Rented before", value: data.rentedBefore },
+              { label: "Driving history", value: data.drivingHistory },
+              { label: "Income source", value: data.incomeSource },
+              { label: "Proof of income", value: data.proofOfIncome },
+              { label: "First week's payment ready", value: data.firstWeekPayment },
+              { label: "Additional driver", value: data.additionalDriver },
+              { label: "Agrees to rental agreement", value: data.agreesToAgreement },
+              { label: "Will provide documents", value: data.willProvideDocs },
+              { label: "Deposit ready", value: data.depositReady },
+              { label: "Urgency", value: data.urgency },
+              { label: "Notes", value: data.notes },
+            ],
+          },
+        });
+        if (!res?.sent) console.warn("[lead email] not sent:", res?.reason);
+      } catch (emailError) {
+        console.warn("[lead email] failed:", emailError);
+      }
       const enriched = await runAiLeadQualification(initial);
       setResult(enriched);
+
     } catch (e) {
       const detail = e instanceof Error ? e.message : String(e);
       // Full detail goes to the console for debugging; the visitor sees a
