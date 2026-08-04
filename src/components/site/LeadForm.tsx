@@ -24,6 +24,8 @@ import {
   type LeadFormData,
   type QualifiedLead,
 } from "@/lib/lead-qualification";
+import { sendLeadTestEmail } from "@/lib/lead-email.functions";
+
 
 import { cn } from "@/lib/utils";
 
