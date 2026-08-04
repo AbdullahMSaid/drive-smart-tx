@@ -183,6 +183,33 @@ export function qualifyLead(
   else if (data.drivingHistory === "yes") { risks.push("Reported major violation or accident in last 5 years"); score -= 5; }
   else if (data.drivingHistory === "discuss") { risks.push("Driving history: prefers to discuss"); }
 
+  // Income
+  if (data.incomeSource) {
+    positive.push(`Income source: ${INCOME_SOURCE_LABELS[data.incomeSource]}`);
+    score += 5;
+  } else missing.push("Income source");
+
+  if (data.proofOfIncome === "yes") { positive.push("Can provide 2 months of income proof"); score += 10; }
+  else if (data.proofOfIncome === "no") { risks.push("Cannot provide proof of income"); score -= 20; }
+  else missing.push("Proof of income");
+
+  // First week's payment
+  if (data.firstWeekPayment === "yes") { positive.push("Can pay the first week's rental today"); score += 12; }
+  else if (data.firstWeekPayment === "no") { risks.push("Cannot pay the first week's rental today"); score -= 20; }
+  else missing.push("First week's payment");
+
+  // Additional driver
+  if (data.additionalDriver === "yes") { risks.push("Additional driver requested — must be approved and added"); }
+  else if (data.additionalDriver === "no") { positive.push("Sole driver"); score += 3; }
+  else missing.push("Additional driver");
+
+  // Rental agreement understanding
+  if (data.agreesToAgreement === "yes") { positive.push("Agrees to rental agreement, mileage limits, payment schedule, and maintenance terms"); score += 10; }
+  else if (data.agreesToAgreement === "no") { risks.push("Does not agree to rental agreement terms"); score -= 100; }
+  else missing.push("Rental agreement agreement");
+
+
+
   // Docs
   if (data.willProvideDocs === "yes") { positive.push("Prepared to provide required documentation"); score += 10; }
   else if (data.willProvideDocs === "no") { risks.push("Not prepared to provide required documentation"); score -= 50; }
