@@ -5,6 +5,7 @@ export type YesNo = "yes" | "no";
 export type YesNoMaybe = "yes" | "no" | "unsure";
 export type ContactMethod = "phone" | "text" | "email";
 export type PickupPreference = "pickup" | "delivery";
+export type IncomeSource = "employed" | "self-employed" | "uber" | "lyft" | "other";
 
 export interface LeadFormData {
   fullName: string;
@@ -23,12 +24,18 @@ export interface LeadFormData {
   pickupArea: string;
   notes: string;
 
-  meetsAge: YesNo | "";
+  /** Exact age in years, entered as text and parsed for qualification. */
+  age: string;
   hasLicense: YesNo | "";
   licenseSuspended: YesNo | "";
   hasInsurance: YesNoMaybe | "";
   rentedBefore: YesNo | "";
   drivingHistory: "no" | "yes" | "discuss" | "";
+  incomeSource: IncomeSource | "";
+  proofOfIncome: YesNo | "";
+  firstWeekPayment: YesNo | "";
+  additionalDriver: YesNo | "";
+  agreesToAgreement: YesNo | "";
   willProvideDocs: YesNo | "";
   depositReady: "yes" | "no" | "need-pricing" | "";
   urgency: "immediate" | "within-week" | "within-two-weeks" | "later" | "researching" | "";
@@ -37,6 +44,7 @@ export interface LeadFormData {
   consentContact: boolean;
   consentAccurate: boolean;
 }
+
 
 export const emptyLead: LeadFormData = {
   fullName: "",
@@ -53,13 +61,19 @@ export const emptyLead: LeadFormData = {
   rentalPurpose: "",
   pickupArea: "",
   notes: "",
-  meetsAge: "",
+  age: "",
   hasLicense: "",
   licenseSuspended: "",
   hasInsurance: "",
   rentedBefore: "",
   drivingHistory: "",
+  incomeSource: "",
+  proofOfIncome: "",
+  firstWeekPayment: "",
+  additionalDriver: "",
+  agreesToAgreement: "",
   willProvideDocs: "",
+
   depositReady: "",
   urgency: "",
   consentNotReservation: false,
@@ -104,6 +118,21 @@ export function generateSubmissionId(): string {
   return `LSR-${stamp}-${rand}`;
 }
 
+export function parseAge(age: string): number | null {
+  const n = Number.parseInt(age, 10);
+  if (Number.isNaN(n) || n < 15 || n > 100) return null;
+  return n;
+}
+
+export const INCOME_SOURCE_LABELS: Record<IncomeSource, string> = {
+  employed: "Employed",
+  "self-employed": "Self-employed",
+  uber: "Uber",
+  lyft: "Lyft",
+  other: "Other",
+};
+
+
 function isPremiumCategory(v: Vehicle | null, cat: string): boolean {
   if (v) return v.category === "premium";
   return cat === "premium";
@@ -128,10 +157,13 @@ export function qualifyLead(
     missing.push("Complete contact information");
   }
 
-  // Age
-  if (data.meetsAge === "yes") { positive.push(`Meets minimum age requirement (${MIN_RENTAL_AGE_PLACEHOLDER}+)`); score += 15; }
-  else if (data.meetsAge === "no") { risks.push("Does not meet minimum rental age"); score -= 100; }
-  else missing.push("Age confirmation");
+  // Age (exact age entered by the customer)
+  const ageNum = parseAge(data.age);
+  const meetsAge: YesNo | "" = ageNum === null ? "" : ageNum >= MIN_RENTAL_AGE_PLACEHOLDER ? "yes" : "no";
+  if (meetsAge === "yes") { positive.push(`Meets minimum age requirement (${ageNum} years old)`); score += 15; }
+  else if (meetsAge === "no") { risks.push(`Under minimum rental age (${ageNum} years old)`); score -= 100; }
+  else missing.push("Age");
+
 
   // License
   if (data.hasLicense === "yes") { positive.push("Has a valid driver's license"); score += 15; }
@@ -150,6 +182,33 @@ export function qualifyLead(
   if (data.drivingHistory === "no") { positive.push("Clean recent driving history reported"); score += 8; }
   else if (data.drivingHistory === "yes") { risks.push("Reported major violation or accident in last 5 years"); score -= 5; }
   else if (data.drivingHistory === "discuss") { risks.push("Driving history: prefers to discuss"); }
+
+  // Income
+  if (data.incomeSource) {
+    positive.push(`Income source: ${INCOME_SOURCE_LABELS[data.incomeSource]}`);
+    score += 5;
+  } else missing.push("Income source");
+
+  if (data.proofOfIncome === "yes") { positive.push("Can provide 2 months of income proof"); score += 10; }
+  else if (data.proofOfIncome === "no") { risks.push("Cannot provide proof of income"); score -= 20; }
+  else missing.push("Proof of income");
+
+  // First week's payment
+  if (data.firstWeekPayment === "yes") { positive.push("Can pay the first week's rental today"); score += 12; }
+  else if (data.firstWeekPayment === "no") { risks.push("Cannot pay the first week's rental today"); score -= 20; }
+  else missing.push("First week's payment");
+
+  // Additional driver
+  if (data.additionalDriver === "yes") { risks.push("Additional driver requested — must be approved and added"); }
+  else if (data.additionalDriver === "no") { positive.push("Sole driver"); score += 3; }
+  else missing.push("Additional driver");
+
+  // Rental agreement understanding
+  if (data.agreesToAgreement === "yes") { positive.push("Agrees to rental agreement, mileage limits, payment schedule, and maintenance terms"); score += 10; }
+  else if (data.agreesToAgreement === "no") { risks.push("Does not agree to rental agreement terms"); score -= 100; }
+  else missing.push("Rental agreement agreement");
+
+
 
   // Docs
   if (data.willProvideDocs === "yes") { positive.push("Prepared to provide required documentation"); score += 10; }
@@ -200,7 +259,8 @@ export function qualifyLead(
 
   // Determine status
   const hardIneligible =
-    data.meetsAge === "no" ||
+    meetsAge === "no" ||
+    data.agreesToAgreement === "no" ||
     data.hasLicense === "no" ||
     data.licenseSuspended === "yes" ||
     data.willProvideDocs === "no" ||
@@ -277,15 +337,22 @@ export async function saveLead(lead: QualifiedLead): Promise<void> {
     notes: d.notes || null,
 
     // Step 2: Qualification (raw answers)
-    meets_age: d.meetsAge,
+    meets_age: (parseAge(d.age) ?? 0) >= MIN_RENTAL_AGE_PLACEHOLDER ? "yes" : "no",
+    age: parseAge(d.age),
     has_license: d.hasLicense,
     license_suspended: d.licenseSuspended,
     has_insurance: d.hasInsurance,
     rented_before: d.rentedBefore,
     driving_history: d.drivingHistory,
+    income_source: d.incomeSource,
+    proof_of_income: d.proofOfIncome,
+    first_week_payment: d.firstWeekPayment,
+    additional_driver: d.additionalDriver,
+    agrees_to_agreement: d.agreesToAgreement,
     will_provide_docs: d.willProvideDocs,
     deposit_ready: d.depositReady,
     urgency: d.urgency,
+
 
     // Step 3: Review consent
     consent_not_reservation: d.consentNotReservation,

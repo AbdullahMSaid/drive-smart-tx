@@ -19,9 +19,12 @@ import {
   qualifyLead,
   saveLead,
   runAiLeadQualification,
+  INCOME_SOURCE_LABELS,
+  
   type LeadFormData,
   type QualifiedLead,
 } from "@/lib/lead-qualification";
+
 import { cn } from "@/lib/utils";
 
 const PURPOSES = [
@@ -112,12 +115,19 @@ export function LeadForm({
       if (!data.rentalPurpose) return "Please choose a rental purpose.";
     }
     if (s === 2) {
+      const ageNum = Number.parseInt(data.age, 10);
+      if (!data.age.trim() || Number.isNaN(ageNum)) return "Please enter your age.";
+      if (ageNum < 15 || ageNum > 100) return "Please enter a valid age.";
+      if (ageNum < MIN_RENTAL_AGE_PLACEHOLDER) return `Renters must be at least ${MIN_RENTAL_AGE_PLACEHOLDER} years old.`;
       const req: (keyof LeadFormData)[] = [
-        "meetsAge","hasLicense","licenseSuspended","hasInsurance",
-        "rentedBefore","drivingHistory","willProvideDocs","depositReady","urgency",
+        "hasLicense","licenseSuspended","hasInsurance",
+        "rentedBefore","drivingHistory","incomeSource","proofOfIncome",
+        "firstWeekPayment","additionalDriver","agreesToAgreement",
+        "willProvideDocs","depositReady","urgency",
       ];
       for (const k of req) if (!data[k]) return "Please answer every qualification question.";
     }
+
     if (s === 3) {
       if (!data.consentNotReservation || !data.consentContact || !data.consentAccurate)
         return "Please confirm all three consent checkboxes.";
@@ -457,7 +467,22 @@ function QualStep({ data, update }: { data: LeadFormData; update: <K extends key
     <div className="space-y-5 rise-in">
       <StepHeader n="03" title="Basic qualification" desc="A few quick questions to help the rental team review your request." />
 
-      <YN q={`Are you at least the minimum rental age (${MIN_RENTAL_AGE_PLACEHOLDER}+)?`} value={data.meetsAge} onChange={(v) => update("meetsAge", v)} />
+      <Field label="How old are you?">
+        <Input
+          type="number"
+          inputMode="numeric"
+          min={15}
+          max={100}
+          value={data.age}
+          onChange={(e) => update("age", e.target.value.replace(/\D/g, "").slice(0, 3))}
+          placeholder="Age in years"
+          className="sm:max-w-40"
+        />
+        <p className="text-xs text-muted-foreground">
+          Renters must be at least {MIN_RENTAL_AGE_PLACEHOLDER} years old.
+        </p>
+      </Field>
+
       <YN q="Do you have a valid driver's license?" value={data.hasLicense} onChange={(v) => update("hasLicense", v)} />
       <YN q="Is your driver's license currently suspended or expired?" value={data.licenseSuspended} onChange={(v) => update("licenseSuspended", v)} />
 
@@ -478,6 +503,44 @@ function QualStep({ data, update }: { data: LeadFormData; update: <K extends key
           options={[["no","No"],["yes","Yes"],["discuss","Prefer to discuss"]]}
         />
       </Field>
+
+      <Field label="What is your primary source of income?">
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+          {(Object.keys(INCOME_SOURCE_LABELS) as (keyof typeof INCOME_SOURCE_LABELS)[]).map((key) => (
+            <button
+              key={key}
+              type="button"
+              onClick={() => update("incomeSource", key)}
+              className={cn(
+                "rounded-md border px-3 py-2 text-sm font-medium transition",
+                data.incomeSource === key
+                  ? "border-gold bg-gold/10 text-foreground"
+                  : "border-border text-muted-foreground hover:text-foreground hover:border-muted-foreground/40",
+              )}
+            >
+              {INCOME_SOURCE_LABELS[key]}
+            </button>
+          ))}
+        </div>
+      </Field>
+
+      <YN q="Can you provide proof of income from the last 2 months?" value={data.proofOfIncome} onChange={(v) => update("proofOfIncome", v)} />
+      <YN q="Can you pay the first week's rental payment today?" value={data.firstWeekPayment} onChange={(v) => update("firstWeekPayment", v)} />
+
+      <Field label="Will anyone else be driving this vehicle?">
+        <ButtonGroup
+          value={data.additionalDriver}
+          onChange={(v) => update("additionalDriver", v as LeadFormData["additionalDriver"])}
+          options={[["no","No"],["yes","Yes — approved driver will be added"]]}
+        />
+      </Field>
+
+      <YN
+        q="Do you understand and agree to the rental agreement, mileage limits, payment schedule, and maintenance responsibilities?"
+        value={data.agreesToAgreement}
+        onChange={(v) => update("agreesToAgreement", v)}
+      />
+
 
       <YN q="Are you prepared to provide a valid driver's license and proof of insurance before final approval?" value={data.willProvideDocs} onChange={(v) => update("willProvideDocs", v)} />
 
@@ -527,15 +590,21 @@ function ReviewStep({ data, update, duration }: {
     ]] as [string, string][]) : []),
     ["Purpose", data.rentalPurpose || "—"],
     ["Pickup area", data.pickupArea || "—"],
-    ["Age requirement", data.meetsAge || "—"],
+    ["Age", data.age ? `${data.age} years old` : "—"],
     ["Valid license", data.hasLicense || "—"],
     ["License suspended/expired", data.licenseSuspended || "—"],
     ["Insurance", data.hasInsurance || "—"],
     ["Rented before", data.rentedBefore || "—"],
     ["Driving history (5y)", data.drivingHistory || "—"],
+    ["Income source", data.incomeSource ? INCOME_SOURCE_LABELS[data.incomeSource] : "—"],
+    ["Proof of income (2 months)", data.proofOfIncome || "—"],
+    ["Can pay first week today", data.firstWeekPayment || "—"],
+    ["Additional driver", data.additionalDriver === "yes" ? "Yes — approved driver to be added" : data.additionalDriver || "—"],
+    ["Agrees to rental agreement", data.agreesToAgreement || "—"],
     ["Will provide docs", data.willProvideDocs || "—"],
     ["Deposit ready", data.depositReady || "—"],
     ["Urgency", data.urgency || "—"],
+
   ];
   return (
     <div className="space-y-5 rise-in">

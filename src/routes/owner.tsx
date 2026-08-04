@@ -523,13 +523,19 @@ function LeadDetail({
       </Section>
 
       <Section title="Qualification answers">
-        <Field label="Meets minimum age" value={val(lead.meets_age)} />
+        <Field label="Age" value={lead.age ? `${lead.age} years old` : val(lead.meets_age === "yes" ? "21+" : lead.meets_age)} />
         <Field label="Valid license" value={val(lead.has_license)} />
         <Field label="License suspended/expired" value={val(lead.license_suspended)} />
         <Field label="Has insurance" value={val(lead.has_insurance)} />
         <Field label="Rented before" value={val(lead.rented_before)} />
         <Field label="Driving history (5 yrs)" value={val(lead.driving_history)} />
+        <Field label="Income source" value={val(lead.income_source)} />
+        <Field label="Proof of income (2 months)" value={val(lead.proof_of_income)} />
+        <Field label="Can pay first week today" value={val(lead.first_week_payment)} />
+        <Field label="Additional driver" value={val(lead.additional_driver)} />
+        <Field label="Agrees to rental agreement" value={val(lead.agrees_to_agreement)} />
         <Field label="Will provide documents" value={val(lead.will_provide_docs)} />
+
         <Field label="Deposit ready" value={val(lead.deposit_ready)} />
         <Field label="Urgency" value={val(lead.urgency)} />
       </Section>
