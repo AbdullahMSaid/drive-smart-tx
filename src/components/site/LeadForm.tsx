@@ -467,7 +467,22 @@ function QualStep({ data, update }: { data: LeadFormData; update: <K extends key
     <div className="space-y-5 rise-in">
       <StepHeader n="03" title="Basic qualification" desc="A few quick questions to help the rental team review your request." />
 
-      <YN q={`Are you at least the minimum rental age (${MIN_RENTAL_AGE_PLACEHOLDER}+)?`} value={data.meetsAge} onChange={(v) => update("meetsAge", v)} />
+      <Field label="How old are you?">
+        <Input
+          type="number"
+          inputMode="numeric"
+          min={15}
+          max={100}
+          value={data.age}
+          onChange={(e) => update("age", e.target.value.replace(/\D/g, "").slice(0, 3))}
+          placeholder="Age in years"
+          className="sm:max-w-40"
+        />
+        <p className="text-xs text-muted-foreground">
+          Renters must be at least {MIN_RENTAL_AGE_PLACEHOLDER} years old.
+        </p>
+      </Field>
+
       <YN q="Do you have a valid driver's license?" value={data.hasLicense} onChange={(v) => update("hasLicense", v)} />
       <YN q="Is your driver's license currently suspended or expired?" value={data.licenseSuspended} onChange={(v) => update("licenseSuspended", v)} />
 
