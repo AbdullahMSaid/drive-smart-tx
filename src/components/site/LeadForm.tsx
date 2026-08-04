@@ -112,12 +112,19 @@ export function LeadForm({
       if (!data.rentalPurpose) return "Please choose a rental purpose.";
     }
     if (s === 2) {
+      const ageNum = Number.parseInt(data.age, 10);
+      if (!data.age.trim() || Number.isNaN(ageNum)) return "Please enter your age.";
+      if (ageNum < 15 || ageNum > 100) return "Please enter a valid age.";
+      if (ageNum < MIN_RENTAL_AGE_PLACEHOLDER) return `Renters must be at least ${MIN_RENTAL_AGE_PLACEHOLDER} years old.`;
       const req: (keyof LeadFormData)[] = [
-        "meetsAge","hasLicense","licenseSuspended","hasInsurance",
-        "rentedBefore","drivingHistory","willProvideDocs","depositReady","urgency",
+        "hasLicense","licenseSuspended","hasInsurance",
+        "rentedBefore","drivingHistory","incomeSource","proofOfIncome",
+        "firstWeekPayment","additionalDriver","agreesToAgreement",
+        "willProvideDocs","depositReady","urgency",
       ];
       for (const k of req) if (!data[k]) return "Please answer every qualification question.";
     }
+
     if (s === 3) {
       if (!data.consentNotReservation || !data.consentContact || !data.consentAccurate)
         return "Please confirm all three consent checkboxes.";
