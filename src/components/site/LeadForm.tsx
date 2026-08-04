@@ -486,6 +486,44 @@ function QualStep({ data, update }: { data: LeadFormData; update: <K extends key
         />
       </Field>
 
+      <Field label="What is your primary source of income?">
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+          {(Object.keys(INCOME_SOURCE_LABELS) as (keyof typeof INCOME_SOURCE_LABELS)[]).map((key) => (
+            <button
+              key={key}
+              type="button"
+              onClick={() => update("incomeSource", key)}
+              className={cn(
+                "rounded-md border px-3 py-2 text-sm font-medium transition",
+                data.incomeSource === key
+                  ? "border-gold bg-gold/10 text-foreground"
+                  : "border-border text-muted-foreground hover:text-foreground hover:border-muted-foreground/40",
+              )}
+            >
+              {INCOME_SOURCE_LABELS[key]}
+            </button>
+          ))}
+        </div>
+      </Field>
+
+      <YN q="Can you provide proof of income from the last 2 months?" value={data.proofOfIncome} onChange={(v) => update("proofOfIncome", v)} />
+      <YN q="Can you pay the first week's rental payment today?" value={data.firstWeekPayment} onChange={(v) => update("firstWeekPayment", v)} />
+
+      <Field label="Will anyone else be driving this vehicle?">
+        <ButtonGroup
+          value={data.additionalDriver}
+          onChange={(v) => update("additionalDriver", v as LeadFormData["additionalDriver"])}
+          options={[["no","No"],["yes","Yes — approved driver will be added"]]}
+        />
+      </Field>
+
+      <YN
+        q="Do you understand and agree to the rental agreement, mileage limits, payment schedule, and maintenance responsibilities?"
+        value={data.agreesToAgreement}
+        onChange={(v) => update("agreesToAgreement", v)}
+      />
+
+
       <YN q="Are you prepared to provide a valid driver's license and proof of insurance before final approval?" value={data.willProvideDocs} onChange={(v) => update("willProvideDocs", v)} />
 
       <Field label="Are you prepared to pay the required rental deposit if approved?">
