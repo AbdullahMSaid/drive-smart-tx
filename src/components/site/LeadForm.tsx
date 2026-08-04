@@ -534,15 +534,21 @@ function ReviewStep({ data, update, duration }: {
     ]] as [string, string][]) : []),
     ["Purpose", data.rentalPurpose || "—"],
     ["Pickup area", data.pickupArea || "—"],
-    ["Age requirement", data.meetsAge || "—"],
+    ["Age", data.age ? `${data.age} years old` : "—"],
     ["Valid license", data.hasLicense || "—"],
     ["License suspended/expired", data.licenseSuspended || "—"],
     ["Insurance", data.hasInsurance || "—"],
     ["Rented before", data.rentedBefore || "—"],
     ["Driving history (5y)", data.drivingHistory || "—"],
+    ["Income source", data.incomeSource ? INCOME_SOURCE_LABELS[data.incomeSource] : "—"],
+    ["Proof of income (2 months)", data.proofOfIncome || "—"],
+    ["Can pay first week today", data.firstWeekPayment || "—"],
+    ["Additional driver", data.additionalDriver === "yes" ? "Yes — approved driver to be added" : data.additionalDriver || "—"],
+    ["Agrees to rental agreement", data.agreesToAgreement || "—"],
     ["Will provide docs", data.willProvideDocs || "—"],
     ["Deposit ready", data.depositReady || "—"],
     ["Urgency", data.urgency || "—"],
+
   ];
   return (
     <div className="space-y-5 rise-in">
