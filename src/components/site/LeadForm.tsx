@@ -153,9 +153,16 @@ export function LeadForm({
       await saveLead(initial);
       const enriched = await runAiLeadQualification(initial);
       setResult(enriched);
-    } catch {
-      setError("Something went wrong submitting your request. Please try again.");
+    } catch (e) {
+      const detail = e instanceof Error ? e.message : String(e);
+      // Full detail goes to the console for debugging; the visitor sees a
+      // friendly message plus the phone number so a failure never loses a lead.
+      console.error("[lead submit] failed:", detail, e);
+      setError(
+        "We couldn't submit your request. Please try again, or call (614) 359-1370 and we'll take your details directly.",
+      );
     } finally {
+
       setSubmitting(false);
     }
   }
