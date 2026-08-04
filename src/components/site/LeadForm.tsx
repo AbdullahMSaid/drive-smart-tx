@@ -153,8 +153,11 @@ export function LeadForm({
       await saveLead(initial);
       const enriched = await runAiLeadQualification(initial);
       setResult(enriched);
-    } catch {
-      setError("Something went wrong submitting your request. Please try again.");
+    } catch (e) {
+      const detail = e instanceof Error ? e.message : String(e);
+      console.error("[lead submit] failed:", detail, e);
+      setError(`Something went wrong submitting your request. Please try again. (${detail})`);
+
     } finally {
       setSubmitting(false);
     }
