@@ -142,10 +142,13 @@ export function qualifyLead(
     missing.push("Complete contact information");
   }
 
-  // Age
-  if (data.meetsAge === "yes") { positive.push(`Meets minimum age requirement (${MIN_RENTAL_AGE_PLACEHOLDER}+)`); score += 15; }
-  else if (data.meetsAge === "no") { risks.push("Does not meet minimum rental age"); score -= 100; }
-  else missing.push("Age confirmation");
+  // Age (exact age entered by the customer)
+  const ageNum = parseAge(data.age);
+  const meetsAge: YesNo | "" = ageNum === null ? "" : ageNum >= MIN_RENTAL_AGE_PLACEHOLDER ? "yes" : "no";
+  if (meetsAge === "yes") { positive.push(`Meets minimum age requirement (${ageNum} years old)`); score += 15; }
+  else if (meetsAge === "no") { risks.push(`Under minimum rental age (${ageNum} years old)`); score -= 100; }
+  else missing.push("Age");
+
 
   // License
   if (data.hasLicense === "yes") { positive.push("Has a valid driver's license"); score += 15; }
