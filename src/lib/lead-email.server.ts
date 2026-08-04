@@ -9,7 +9,7 @@ export type LeadEmailPayload = {
   fields: Array<{ label: string; value: string }>;
 };
 
-const TEST_RECIPIENT = "royaltylux8@gmail.com";
+const TEST_RECIPIENT = "abdullahi_said1@outlook.com";
 
 function escapeHtml(value: string): string {
   return value
