@@ -155,10 +155,14 @@ export function LeadForm({
       setResult(enriched);
     } catch (e) {
       const detail = e instanceof Error ? e.message : String(e);
+      // Full detail goes to the console for debugging; the visitor sees a
+      // friendly message plus the phone number so a failure never loses a lead.
       console.error("[lead submit] failed:", detail, e);
-      setError(`Something went wrong submitting your request. Please try again. (${detail})`);
-
+      setError(
+        "We couldn't submit your request. Please try again, or call (614) 359-1370 and we'll take your details directly.",
+      );
     } finally {
+
       setSubmitting(false);
     }
   }
