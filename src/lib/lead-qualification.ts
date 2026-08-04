@@ -118,6 +118,21 @@ export function generateSubmissionId(): string {
   return `LSR-${stamp}-${rand}`;
 }
 
+export function parseAge(age: string): number | null {
+  const n = Number.parseInt(age, 10);
+  if (Number.isNaN(n) || n < 15 || n > 100) return null;
+  return n;
+}
+
+export const INCOME_SOURCE_LABELS: Record<IncomeSource, string> = {
+  employed: "Employed",
+  "self-employed": "Self-employed",
+  uber: "Uber",
+  lyft: "Lyft",
+  other: "Other",
+};
+
+
 function isPremiumCategory(v: Vehicle | null, cat: string): boolean {
   if (v) return v.category === "premium";
   return cat === "premium";
