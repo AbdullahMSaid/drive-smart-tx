@@ -20,7 +20,7 @@ import {
   saveLead,
   runAiLeadQualification,
   INCOME_SOURCE_LABELS,
-  type IncomeSource,
+  
   type LeadFormData,
   type QualifiedLead,
 } from "@/lib/lead-qualification";
