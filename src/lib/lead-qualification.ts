@@ -259,7 +259,8 @@ export function qualifyLead(
 
   // Determine status
   const hardIneligible =
-    data.meetsAge === "no" ||
+    meetsAge === "no" ||
+    data.agreesToAgreement === "no" ||
     data.hasLicense === "no" ||
     data.licenseSuspended === "yes" ||
     data.willProvideDocs === "no" ||
