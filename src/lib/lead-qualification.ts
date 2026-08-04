@@ -309,15 +309,22 @@ export async function saveLead(lead: QualifiedLead): Promise<void> {
     notes: d.notes || null,
 
     // Step 2: Qualification (raw answers)
-    meets_age: d.meetsAge,
+    meets_age: (parseAge(d.age) ?? 0) >= MIN_RENTAL_AGE_PLACEHOLDER ? "yes" : "no",
+    age: parseAge(d.age),
     has_license: d.hasLicense,
     license_suspended: d.licenseSuspended,
     has_insurance: d.hasInsurance,
     rented_before: d.rentedBefore,
     driving_history: d.drivingHistory,
+    income_source: d.incomeSource,
+    proof_of_income: d.proofOfIncome,
+    first_week_payment: d.firstWeekPayment,
+    additional_driver: d.additionalDriver,
+    agrees_to_agreement: d.agreesToAgreement,
     will_provide_docs: d.willProvideDocs,
     deposit_ready: d.depositReady,
     urgency: d.urgency,
+
 
     // Step 3: Review consent
     consent_not_reservation: d.consentNotReservation,
