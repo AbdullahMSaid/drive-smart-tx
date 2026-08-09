@@ -135,4 +135,4 @@ export const vehicles: Vehicle[] = [
 ];
 
 export const PREMIUM_SUV_MIN_DAYS = 3;
-export const MIN_RENTAL_AGE_PLACEHOLDER = 21;
+export const MIN_RENTAL_AGE_PLACEHOLDER = 25;
