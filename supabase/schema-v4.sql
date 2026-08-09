@@ -35,8 +35,9 @@ alter table qualification_results
 create index if not exists qualification_results_lead_id_idx
   on qualification_results (lead_id);
 
--- Data API access: owner (authenticated) reads, server-side pipeline writes.
+-- Data API access: owner (authenticated) reads, public form writes, service_role full.
 grant select on qualification_results to authenticated;
+grant insert on qualification_results to anon, authenticated;
 grant all on qualification_results to service_role;
 
 alter table qualification_results enable row level security;
@@ -46,3 +47,12 @@ create policy "Authenticated owners can read qualification results"
   on qualification_results for select
   to authenticated
   using (true);
+
+-- The public intake form writes the deterministic result right after the lead
+-- insert. Insert-only: visitors can never read qualification rows back.
+drop policy if exists "Public form can insert qualification results" on qualification_results;
+create policy "Public form can insert qualification results"
+  on qualification_results for insert
+  to anon, authenticated
+  with check (true);
+
