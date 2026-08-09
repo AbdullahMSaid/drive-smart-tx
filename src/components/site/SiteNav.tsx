@@ -3,7 +3,7 @@ import { Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { scrollToId } from "@/lib/scroll";
 import { cn } from "@/lib/utils";
-import logoAsset from "@/assets/royalty-luxury-logo.png.asset.json";
+import logoAsset from "@/assets/royalty-luxury-logo.png";
 
 const NAV = [
   { label: "Home", id: "home" },
@@ -51,7 +51,7 @@ export function SiteNav({ hidden = false }: { hidden?: boolean }) {
           aria-label="Royalty Luxury Transportation Services — Home"
         >
           <img
-            src={logoAsset.url}
+            src={logoAsset}
             alt="Royalty Luxury Transportation Services"
             className="h-11 w-auto md:h-12"
             width={160}
