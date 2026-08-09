@@ -39,7 +39,7 @@ export function RentalPolicyDialog({ trigger }: { trigger: ReactNode }) {
                 <li>Make/Model: 2023 Chevy Suburban</li>
                 <li>VIN: 1GNSCCKD0PR465263</li>
                 <li>License Plate: XMC9171</li>
-                <li>Pickup / Drop-off Location: 5502 Denton Dr Cut Off</li>
+                <li>Pickup / Drop-off Location: Dallas, TX 75235</li>
               </ul>
             </section>
 

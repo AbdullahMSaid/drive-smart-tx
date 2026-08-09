@@ -130,7 +130,7 @@ SQL migrations live in `supabase/`, applied in order:
 <div align="center">
 
 **Royalty Luxury Transportation Services**
-5502 Denton Dr · Dallas, TX 75235
+Dallas, TX 75235
 [royaltylux8@gmail.com](mailto:royaltylux8@gmail.com) · [(614) 359-1370](tel:+16143591370)
 
 *Serving the DFW area.*
