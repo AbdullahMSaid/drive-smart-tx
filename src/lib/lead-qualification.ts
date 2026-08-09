@@ -16,12 +16,34 @@ export * from "./qualification/engine";
 // RLS on rental_leads allows anon INSERT only (no SELECT), so the row id is
 // generated client-side and reused instead of relying on `.select()` after
 // insert.
+
+/** Column names quoted in a PostgREST/Postgres "unknown column" error. */
+function unknownColumnsFromError(message: string): string[] {
+  const found = new Set<string>();
+  // PostgREST: Could not find the 'processing_status' column of 'rental_leads'
+  // Postgres:  column "processing_status" of relation "rental_leads" does not exist
+  for (const m of message.matchAll(/'([a-z0-9_]+)' column/gi)) found.add(m[1]);
+  for (const m of message.matchAll(/column "([a-z0-9_]+)"/gi)) found.add(m[1]);
+  return [...found];
+}
+
+/** Columns the lead is meaningless without — never dropped on retry. */
+const REQUIRED_COLUMNS = new Set([
+  "id",
+  "submission_id",
+  "submitted_at",
+  "full_name",
+  "phone",
+  "email",
+]);
+
 export async function saveLead(lead: QualifiedLead): Promise<void> {
   const d = lead.data;
   const leadId = crypto.randomUUID();
 
-  const { error } = await supabase.from("rental_leads").insert({
+  const row: Record<string, unknown> = {
     id: leadId,
+
     submission_id: lead.submissionId,
     submitted_at: lead.submittedAt,
 
@@ -70,12 +92,30 @@ export async function saveLead(lead: QualifiedLead): Promise<void> {
     // Pipeline (NOT the owner-editable lead_status): raw lead awaiting
     // deterministic + future AI processing.
     processing_status: "new",
-  });
+  };
+
+  // Some deployments haven't applied the newest migration yet. Rather than
+  // failing the visitor's submission over an optional pipeline/intake column,
+  // drop the columns the database reports as unknown and retry.
+  let error: { message: string } | null = null;
+  for (let attempt = 0; attempt < 4; attempt++) {
+    const res = await supabase.from("rental_leads").insert(row);
+    error = res.error ?? null;
+    if (!error) break;
+
+    const unknown = unknownColumnsFromError(error.message).filter(
+      (c) => c in row && !REQUIRED_COLUMNS.has(c),
+    );
+    if (unknown.length === 0) break;
+    for (const c of unknown) delete row[c];
+    console.warn("[saveLead] retrying without unknown column(s):", unknown.join(", "));
+  }
 
   if (error) throw new Error(error.message);
 
   lead.leadId = leadId;
 }
+
 
 /**
  * PIPELINE SEAM — intentionally still deterministic-only.
