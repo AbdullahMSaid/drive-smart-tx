@@ -82,12 +82,28 @@ export async function saveLead(lead: QualifiedLead): Promise<void> {
     // Pipeline (NOT the owner-editable lead_status): raw lead awaiting
     // deterministic + future AI processing.
     processing_status: "new",
-  });
+  };
+
+  // Some deployments haven't applied the newest migration yet. Rather than
+  // failing the visitor's submission over an optional pipeline/intake column,
+  // drop the columns the database reports as unknown and retry.
+  let error: { message: string } | null = null;
+  for (let attempt = 0; attempt < 4; attempt++) {
+    const res = await supabase.from("rental_leads").insert(row);
+    error = res.error ?? null;
+    if (!error) break;
+
+    const unknown = unknownColumnsFromError(error.message).filter((c) => c in row);
+    if (unknown.length === 0) break;
+    for (const c of unknown) delete row[c];
+    console.warn("[saveLead] retrying without unknown column(s):", unknown.join(", "));
+  }
 
   if (error) throw new Error(error.message);
 
   lead.leadId = leadId;
 }
+
 
 /**
  * PIPELINE SEAM — intentionally still deterministic-only.
