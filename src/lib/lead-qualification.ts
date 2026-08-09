@@ -16,12 +16,24 @@ export * from "./qualification/engine";
 // RLS on rental_leads allows anon INSERT only (no SELECT), so the row id is
 // generated client-side and reused instead of relying on `.select()` after
 // insert.
+
+/** Column names quoted in a PostgREST/Postgres "unknown column" error. */
+function unknownColumnsFromError(message: string): string[] {
+  const found = new Set<string>();
+  // PostgREST: Could not find the 'processing_status' column of 'rental_leads'
+  // Postgres:  column "processing_status" of relation "rental_leads" does not exist
+  for (const m of message.matchAll(/'([a-z0-9_]+)' column/gi)) found.add(m[1]);
+  for (const m of message.matchAll(/column "([a-z0-9_]+)"/gi)) found.add(m[1]);
+  return [...found];
+}
+
 export async function saveLead(lead: QualifiedLead): Promise<void> {
   const d = lead.data;
   const leadId = crypto.randomUUID();
 
-  const { error } = await supabase.from("rental_leads").insert({
+  const row: Record<string, unknown> = {
     id: leadId,
+
     submission_id: lead.submissionId,
     submitted_at: lead.submittedAt,
 
