@@ -16,6 +16,8 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import logoAsset from "@/assets/royalty-luxury-logo.png.asset.json";
+import { MIN_RENTAL_AGE_PLACEHOLDER } from "@/data/vehicles";
+import { tierForScore } from "@/lib/qualification/engine";
 
 export const Route = createFileRoute("/owner")({
   ssr: false,
@@ -204,6 +206,9 @@ function Dashboard() {
   const [error, setError] = useState<string | null>(null);
   const [blocked, setBlocked] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  // Deterministic (and later AI) qualification output, keyed by lead id.
+  // Optional by design: leads submitted before the pipeline runs simply have none.
+  const [quals, setQuals] = useState<Record<string, Lead>>({});
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -237,6 +242,23 @@ function Dashboard() {
     }
 
     setLeads(data ?? []);
+
+    const ids = (data ?? []).map((l: Lead) => l.id);
+    if (ids.length > 0) {
+      const qr = await supabase
+        .from("qualification_results")
+        .select("*")
+        .in("lead_id", ids)
+        .order("created_at", { ascending: false });
+      const map: Record<string, Lead> = {};
+      for (const row of qr.data ?? []) {
+        if (!map[row.lead_id]) map[row.lead_id] = row; // newest wins
+      }
+      setQuals(map);
+    } else {
+      setQuals({});
+    }
+
     setLoading(false);
   }, []);
 
@@ -299,6 +321,7 @@ function Dashboard() {
         {selected ? (
           <LeadDetail
             lead={selected}
+            qual={quals[selected.id] ?? null}
             onBack={() => setSelectedId(null)}
             onStatusChange={(s) => updateStatus(selected.id, s)}
           />
@@ -457,6 +480,122 @@ function LeadList({
   );
 }
 
+const QUAL_STATUS_LABELS: Record<string, string> = {
+  "high-priority": "High priority",
+  "needs-review": "Manual review",
+  "missing-info": "Missing information",
+  "not-eligible": "Not eligible",
+};
+
+function BulletList({ items, tone }: { items: unknown; tone: "risk" | "missing" | "positive" }) {
+  const list = Array.isArray(items) ? items.filter((i) => typeof i === "string") : [];
+  if (list.length === 0) return <span className="text-sm text-muted-foreground">None</span>;
+  return (
+    <ul className="mt-0.5 space-y-1 text-sm">
+      {list.map((item, i) => (
+        <li
+          key={i}
+          className={cn(
+            "flex gap-2",
+            tone === "risk" && "text-foreground",
+            tone === "missing" && "text-muted-foreground",
+            tone === "positive" && "text-muted-foreground",
+          )}
+        >
+          <span className={cn("mt-1.5 h-1 w-1 shrink-0 rounded-full", tone === "risk" ? "bg-destructive" : "bg-gold/70")} />
+          <span className="break-words">{item}</span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+/**
+ * Qualification result — the protected deterministic status (and, later, the
+ * server-side AI review). Renders a neutral placeholder when no result exists
+ * yet, so the portal never depends on the pipeline having run.
+ */
+function QualificationSection({ qual }: { qual?: Lead | null }) {
+  if (!qual) {
+    return (
+      <section className="rounded-lg border border-dashed border-border/60 bg-card/60 p-5">
+        <h2 className="font-display text-base font-semibold text-foreground">Qualification result</h2>
+        <p className="mt-2 text-sm text-muted-foreground">
+          No qualification result recorded for this lead yet. Scores, risk flags, and the
+          recommended action appear here once the review pipeline processes it.
+        </p>
+      </section>
+    );
+  }
+
+  const score = typeof qual.rule_score === "number" ? qual.rule_score : null;
+  const status = typeof qual.rule_status === "string" ? qual.rule_status : null;
+  const tier = score !== null && status !== "not-eligible" ? tierForScore(score) : null;
+
+  return (
+    <section className="rounded-lg border border-border/60 bg-card p-5">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h2 className="font-display text-base font-semibold text-foreground">Qualification result</h2>
+        <div className="flex items-center gap-2">
+          {status && (
+            <span
+              className={cn(
+                "rounded-full px-2.5 py-1 text-[11px] font-medium",
+                status === "not-eligible"
+                  ? "bg-destructive/15 text-destructive"
+                  : status === "high-priority"
+                    ? "bg-gold/15 text-gold"
+                    : "bg-accent text-accent-foreground",
+              )}
+            >
+              {QUAL_STATUS_LABELS[status] ?? status}
+            </span>
+          )}
+          {score !== null && (
+            <span className="rounded-full bg-accent px-2.5 py-1 text-[11px] font-medium text-accent-foreground">
+              Score {score}/100{tier ? ` · ${tier.replace("-", " ")}` : ""}
+            </span>
+          )}
+        </div>
+      </div>
+
+      <p className="mt-3 text-xs text-muted-foreground">
+        Automatically determined and read-only. The editable status above is the owner's own
+        lead lifecycle stage.
+      </p>
+
+      <dl className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div className="min-w-0">
+          <dt className="text-xs uppercase tracking-wide text-muted-foreground">Risk flags</dt>
+          <dd><BulletList items={qual.rule_risk_flags} tone="risk" /></dd>
+        </div>
+        <div className="min-w-0">
+          <dt className="text-xs uppercase tracking-wide text-muted-foreground">Missing information</dt>
+          <dd><BulletList items={qual.rule_missing_info} tone="missing" /></dd>
+        </div>
+        <div className="min-w-0">
+          <dt className="text-xs uppercase tracking-wide text-muted-foreground">Positive signals</dt>
+          <dd><BulletList items={qual.rule_positive_signals} tone="positive" /></dd>
+        </div>
+        <div className="min-w-0">
+          <dt className="text-xs uppercase tracking-wide text-muted-foreground">Recommended action</dt>
+          <dd className="mt-0.5 break-words text-sm text-foreground">
+            {val(qual.ai_recommended_action ?? qual.rule_recommended_action)}
+          </dd>
+        </div>
+        {(qual.rule_summary || qual.ai_summary) && (
+          <div className="min-w-0 sm:col-span-2">
+            <dt className="text-xs uppercase tracking-wide text-muted-foreground">Summary</dt>
+            <dd className="mt-0.5 break-words text-sm text-muted-foreground">
+              {val(qual.ai_summary ?? qual.rule_summary)}
+            </dd>
+          </div>
+        )}
+      </dl>
+    </section>
+  );
+}
+
 function Field({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div className="min-w-0">
@@ -477,10 +616,12 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 
 function LeadDetail({
   lead,
+  qual,
   onBack,
   onStatusChange,
 }: {
   lead: Lead;
+  qual?: Lead | null;
   onBack: () => void;
   onStatusChange: (status: string) => void;
 }) {
@@ -522,8 +663,10 @@ function LeadDetail({
         <Field label="Purpose" value={val(lead.rental_purpose)} />
       </Section>
 
+      <QualificationSection qual={qual} />
+
       <Section title="Qualification answers">
-        <Field label="Age" value={lead.age ? `${lead.age} years old` : val(lead.meets_age === "yes" ? "21+" : lead.meets_age)} />
+        <Field label="Age" value={lead.age ? `${lead.age} years old` : val(lead.meets_age === "yes" ? `${MIN_RENTAL_AGE_PLACEHOLDER}+` : lead.meets_age)} />
         <Field label="Valid license" value={val(lead.has_license)} />
         <Field label="License suspended/expired" value={val(lead.license_suspended)} />
         <Field label="Has insurance" value={val(lead.has_insurance)} />
