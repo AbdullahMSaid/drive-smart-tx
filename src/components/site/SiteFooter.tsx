@@ -1,6 +1,6 @@
 import { Instagram, Facebook, Phone, Mail, MapPin, Clock } from "lucide-react";
 import { Link } from "@tanstack/react-router";
-import logoAsset from "@/assets/royalty-luxury-logo.png.asset.json";
+import logoAsset from "@/assets/royalty-luxury-logo.png";
 import { RentalPolicyDialog } from "./RentalPolicyDialog";
 
 
@@ -12,7 +12,7 @@ export function SiteFooter() {
           <div>
             <div className="flex items-center gap-3">
               <img
-                src={logoAsset.url}
+                src={logoAsset}
                 alt="Royalty Luxury Transportation Services"
                 className="h-14 w-auto"
                 width={200}

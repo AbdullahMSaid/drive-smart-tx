@@ -3,9 +3,9 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { scrollToId } from "@/lib/scroll";
 import { cn } from "@/lib/utils";
-import suburbanHero from "@/assets/suburban-hero.png.asset.json";
-import accordHero from "@/assets/accord-hero.png.asset.json";
-import lexusHero from "@/assets/lexus-hero.png.asset.json";
+import suburbanHero from "@/assets/suburban-hero.png";
+import accordHero from "@/assets/accord-hero.png";
+import lexusHero from "@/assets/lexus-hero.png";
 
 type Slide = {
   id: string;
@@ -28,7 +28,7 @@ const SLIDES: Slide[] = [
     id: "suburban",
     chip: "2023 Suburban",
     chipShort: "Suburban",
-    image: suburbanHero.url,
+    image: suburbanHero,
     alt: "Black Chevrolet Suburban at a Texas overlook at sunset, tailgate open with travel gear",
     eyebrow: "Texas Vehicle Rentals",
     headline: <>Premium SUVs for<br />Every Journey.</>,
@@ -43,7 +43,7 @@ const SLIDES: Slide[] = [
     id: "accord",
     chip: "Honda Accord",
     chipShort: "Accord",
-    image: accordHero.url,
+    image: accordHero,
     alt: "Black Honda Accord driving through downtown Dallas at golden hour with skyline in the background",
     eyebrow: "Reliable Everyday Rentals",
     headline: <>Comfortable.<br />Affordable.<br />Ready to Go.</>,
@@ -58,7 +58,7 @@ const SLIDES: Slide[] = [
     id: "lexus",
     chip: "Lexus ES350",
     chipShort: "Lexus ES",
-    image: lexusHero.url,
+    image: lexusHero,
     alt: "Silver 2015 Lexus ES350 parked along a lakeside road at sunset in North Texas",
     eyebrow: "Relaxed Premium Travel",
     headline: <>Comfort for Every<br />Weekend Escape.</>,
