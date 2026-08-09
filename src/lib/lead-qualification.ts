@@ -27,6 +27,16 @@ function unknownColumnsFromError(message: string): string[] {
   return [...found];
 }
 
+/** Columns the lead is meaningless without — never dropped on retry. */
+const REQUIRED_COLUMNS = new Set([
+  "id",
+  "submission_id",
+  "submitted_at",
+  "full_name",
+  "phone",
+  "email",
+]);
+
 export async function saveLead(lead: QualifiedLead): Promise<void> {
   const d = lead.data;
   const leadId = crypto.randomUUID();
@@ -93,7 +103,9 @@ export async function saveLead(lead: QualifiedLead): Promise<void> {
     error = res.error ?? null;
     if (!error) break;
 
-    const unknown = unknownColumnsFromError(error.message).filter((c) => c in row);
+    const unknown = unknownColumnsFromError(error.message).filter(
+      (c) => c in row && !REQUIRED_COLUMNS.has(c),
+    );
     if (unknown.length === 0) break;
     for (const c of unknown) delete row[c];
     console.warn("[saveLead] retrying without unknown column(s):", unknown.join(", "));
