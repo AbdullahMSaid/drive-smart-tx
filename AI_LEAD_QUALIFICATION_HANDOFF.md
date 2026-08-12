@@ -2,119 +2,122 @@
 
 ## Current State
 
-The rental intake form works locally against the connected Supabase project and
-sends the temporary raw-intake Resend email. The owner portal at `/owner` is
-authenticated and now includes a dashboard plus lead/detail views.
+The application is ready for a local client demo. The intake form saves raw submissions to Supabase, immediately shows the visitor a confirmation screen, sends the raw intake email, and starts the AI review without making the visitor wait for the model.
 
-The deterministic qualification engine is complete and tested. It applies the
-owner's confirmed 25-year minimum age, protected hard-rejection rules,
-manual-review rules, scoring, flags, missing information, and a recommended
-action. Qualification results are stored in `qualification_results` and shown
-alongside raw lead data in the owner portal.
+The deterministic engine uses the owner's confirmed minimum age of 25 and remains authoritative for eligibility, hard rejections, scores, missing information, and manual-review rules.
+
+The AI layer uses LangChain with OpenRouter model `deepseek/deepseek-v4-flash`. It returns function-calling structured output, validates it with Zod, adds an owner summary and recommended action, and cannot override deterministic hard rejections.
+
+The authenticated `/owner` portal includes the dashboard, lead list, raw intake detail, deterministic result, visibly gold-labeled **AI Summary**, and **AI Recommended Action**.
+
+## Current Demo Flow
+
+```text
+Visitor submits intake
+→ raw lead saved to rental_leads
+→ visitor immediately sees confirmation
+→ raw intake email goes to the project owner's verified inbox
+→ server reloads the saved lead and recomputes deterministic rules
+→ one structured OpenRouter review runs
+→ protected final result and audit events are saved
+→ AI result appears in the owner portal
+→ outcome email preview goes to the project owner's verified inbox
+```
+
+## Demo Email Mode
+
+Email delivery is intentionally locked to the project owner's verified Resend inbox, regardless of the email entered in the form.
+
+- Raw intake email: owner inbox.
+- Passed, not-eligible, or more-information outcome preview: owner inbox.
+- The submitted customer address appears in the preview subject for demonstration.
+- No form-entered customer receives email in demo mode.
+- `onboarding@resend.dev` remains the sender until a domain is verified.
+
+After client approval and domain verification, update `sendQualificationEmailViaResend` in `src/lib/lead-email.server.ts` to use `FROM_EMAIL` and `payload.customerEmail`. Then remove the temporary raw-intake email after the owner confirms the final email is sufficient.
 
 ## Completed Work
 
-- Exported Lovable-only image assets into tracked local PNG files.
-- Added deterministic qualification engine at `src/lib/qualification/engine.ts`.
-- Added 32 Vitest cases at `src/lib/qualification/engine.test.ts`.
-- Added `supabase/schema-v4.sql` for qualification/pipeline support.
-- Updated `/owner` with:
-  - Dashboard KPIs based on real leads and qualification results.
-  - Recent-lead activity and a manual-review queue.
-  - Lead detail view with raw intake and qualification result.
-  - Clear hard-rejection presentation: a rule score cannot be mistaken for
-    approval when an eligibility rule failed.
-- Added local `.env` protection to `.gitignore`; `.env` is not tracked.
-- Regenerated `src/routeTree.gen.ts` after the TanStack Start build.
+- Exported Lovable image assets into tracked local files.
+- Built and tested the deterministic qualification engine.
+- Built the authenticated owner dashboard and lead-detail experience.
+- Corrected hard-rejection presentation so a score cannot imply approval.
+- Added LangChain/OpenRouter structured AI review with Zod validation.
+- Added a pure guard preventing AI from bypassing hard rejections.
+- Added safe manual-review fallback when AI is unavailable.
+- Added server-only Supabase processing and audit writes.
+- Applied `supabase/schema-v5.sql` to the connected Supabase project.
+- Corrected intake RLS so anonymous visitors and authenticated owners can submit.
+- Added three customer outcome email templates: passed, not eligible, and more information.
+- Changed the form to show confirmation immediately while AI continues.
+- Tested 10 synthetic candidates: all 10 matched expected final outcomes.
+- Sent and verified all three customer email previews through Resend.
+- Protected `.env` through `.gitignore`; it is not tracked.
 
-## Current Qualification Flow
+## Configuration
 
-```text
-Browser form
-→ insert raw lead into rental_leads
-→ send temporary raw-intake Resend email
-→ run deterministic qualification in the browser
-→ insert result into qualification_results
-→ owner portal reads lead + result
-```
-
-The temporary raw-intake email is intentionally retained for now so the owner
-can compare the submitted answers with future AI output. Do not remove it until
-the owner validates the final qualification-summary email.
-
-## Configuration Needed Before AI Work
-
-Local `.env` must contain real values for these server-only settings. Do not
-commit the file or paste the values into chat.
+Configured locally in ignored `.env`:
 
 ```env
-SUPABASE_URL=https://your-project.supabase.co
-SUPABASE_SERVICE_ROLE_KEY=sb_secret_...
+SUPABASE_URL=...
+SUPABASE_SERVICE_ROLE_KEY=...
 OPENROUTER_API_KEY=...
-OPENROUTER_MODEL=...
+OPENROUTER_MODEL=deepseek/deepseek-v4-flash
+RESEND_API_KEY=...
 ```
 
-`SUPABASE_URL` should match `VITE_SUPABASE_URL`. The service-role value is the
-Supabase secret key (`sb_secret_...`), never a `VITE_` variable. At handoff,
-these four values had not yet been configured. `RESEND_API_KEY` is configured.
+Never commit `.env`, expose the service-role key through a `VITE_` variable, or paste secret values into project files.
 
-## Exact Next Step: Structured AI Review
+The same server-only values must be added separately to Lovable Cloud secrets before the hosted preview can run the AI and email pipeline. After adding them, republish and complete one hosted end-to-end test. Until then, local is the verified demo environment.
 
-Implement one server-side LangChain/OpenRouter structured call after the
-deterministic result is created. It must receive normalized lead data, the
-protected deterministic result, and relevant notes. Validate the output with
-Zod.
+## Test Matrix Result
 
-Required AI fields:
+| Case | Deterministic result | Protected final result |
+| --- | --- | --- |
+| Excellent candidate | High priority | High |
+| Under age 25 | Not eligible | Not eligible |
+| No valid license | Not eligible | Not eligible |
+| Suspended license | Not eligible | Not eligible |
+| No income proof | Not eligible | Not eligible |
+| Cannot pay first week | Not eligible | Not eligible |
+| Cannot pay deposit | Not eligible | Not eligible |
+| Insurance uncertain | Needs review | Manual review |
+| Additional driver | Needs review | Manual review |
+| Contradictory notes | Needs review | Manual review |
 
-- `priority`: `high | normal | low | manual_review`
-- concise owner summary
-- evidence-based additional risk flags
-- contradictions/inconsistencies
-- missing information
-- recommended owner action
-- suggested customer reply
-
-Rules:
-
-- The model cannot override a deterministic hard rejection.
-- It can only downgrade a non-rejected lead to manual review when supported by
-  the submission.
-- It must not invent facts, infer protected traits, or claim fraud without
-  objective evidence.
-- AI failure must preserve the raw lead and deterministic result, then route to
-  manual review with an audit event.
-
-## Intended Production Flow
-
-```text
-Save raw lead
-→ temporary raw-intake email (during validation period)
-→ deterministic result
-→ one server-side structured AI review
-→ protected final decision + audit event
-→ save AI metadata/output
-→ final qualification-summary email
-```
-
-After owner validation, remove the temporary raw-intake email and retain only
-the final qualification-summary email.
+Synthetic records are labeled `TEST AI MATRIX` in the owner portal.
 
 ## Verification Last Run
 
-- `bun run test` — 32 tests passed.
+- `bun run test` — 41 tests passed.
 - `bun run build` — passed.
-- `bunx eslint src/routes/owner.tsx` — passed.
+- Targeted ESLint for changed TypeScript/TSX files — passed.
+- `git diff --check` — passed.
+- Live OpenRouter structured call — passed.
+- Live Resend previews for all three outcomes — passed.
 
-The full-project lint command still fails because of pre-existing formatting
-violations outside the owner route. It was not mass-formatted in this work.
+The remaining build warning is from the pre-existing email server function using TanStack's deprecated `inputValidator` API.
+
+## Exact Next Steps
+
+1. Add all server-only secrets to Lovable Cloud.
+2. Republish the Lovable preview.
+3. Submit one complete request on the hosted URL.
+4. Confirm immediate visitor feedback, both owner-inbox emails, Supabase records, and owner portal AI output.
+5. Use the hosted URL for the client demo only after that test passes; keep local as backup.
+6. After client approval, verify the sending domain and enable real customer delivery.
+7. Remove the raw-intake email when the owner approves the final outcome email.
+8. Complete rate limits, duplicate prevention, input hardening, CSRF protection, and cost guardrails before public launch.
 
 ## Relevant Files
 
-- `src/lib/qualification/engine.ts` — pure rental qualification rules.
-- `src/lib/lead-qualification.ts` — browser persistence seam.
-- `src/components/site/LeadForm.tsx` — form submission flow and raw email call.
-- `src/lib/lead-email.functions.ts` / `src/lib/lead-email.server.ts` — current
-  server-side Resend integration.
-- `src/routes/owner.tsx` — owner dashboard, lead list, and review detail.
-- `supabase/schema-v4.sql` — current qualification-related schema migration.
+- `src/lib/qualification/engine.ts` — deterministic business rules.
+- `src/lib/qualification/ai-review.ts` — AI schema, prompt, fallback, and decision guard.
+- `src/lib/qualification/ai-review.server.ts` — LangChain/OpenRouter call.
+- `src/lib/qualification/process-lead.server.ts` — server pipeline, persistence, emails, and audit events.
+- `src/lib/qualification/process-lead.functions.ts` — browser/server boundary.
+- `src/lib/lead-qualification.ts` — raw persistence and pipeline trigger.
+- `src/lib/lead-email.server.ts` — raw and outcome email rendering/delivery.
+- `src/components/site/LeadForm.tsx` — form submission and immediate confirmation.
+- `src/routes/owner.tsx` — owner dashboard and AI-labeled lead detail.
+- `supabase/schema-v5.sql` — AI fields, processing events, status constraints, and intake policy.

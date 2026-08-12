@@ -8,6 +8,7 @@
 import { MIN_RENTAL_AGE_PLACEHOLDER } from "@/data/vehicles";
 import { supabase } from "@/integrations/supabase/client";
 import { parseAge, type QualifiedLead } from "./qualification/engine";
+import { processLeadOnServer } from "./qualification/process-lead.functions";
 
 export * from "./qualification/engine";
 
@@ -116,36 +117,15 @@ export async function saveLead(lead: QualifiedLead): Promise<void> {
   lead.leadId = leadId;
 }
 
-
-/**
- * PIPELINE SEAM — intentionally still deterministic-only.
- *
- * Today: persists the deterministic engine output to `qualification_results`.
- * Later: a server-side structured AI review will run *after* this, writing the
- * `ai_*` columns and advancing `processing_status`. It must never override the
- * protected deterministic status (hard rejections stay hard rejections).
- */
 export async function runAiLeadQualification(lead: QualifiedLead): Promise<QualifiedLead> {
-  if (lead.leadId) {
-    const { error } = await supabase.from("qualification_results").insert({
-      lead_id: lead.leadId,
-      rule_status: lead.status,
-      rule_score: lead.score,
-      rule_positive_signals: lead.positiveSignals,
-      rule_risk_flags: lead.riskFlags,
-      rule_missing_info: lead.missingInfo,
-      rule_recommended_action: lead.recommendedNextAction,
-      rule_summary: lead.summary,
-    });
-
-    // qualification_results has RLS enabled with no anon policy, so this write
-    // is expected to be rejected from the browser until the pipeline runs
-    // server-side. Never fail the user's submission because of it — the lead
-    // itself is already saved.
-    if (error) {
-      console.warn("[qualification_results] insert skipped:", error.message);
-    }
+  if (!lead.leadId) return lead;
+  try {
+    const result = await processLeadOnServer({ data: { leadId: lead.leadId } });
+    return result.lead;
+  } catch (error) {
+    // The raw lead is already safely stored. AI/database migration problems
+    // must not turn a successful customer submission into a visible failure.
+    console.warn("[lead qualification pipeline] deferred:", error);
+    return lead;
   }
-
-  return lead;
 }

@@ -912,6 +912,9 @@ function QualificationSection({ qual }: { qual?: Lead | null }) {
   const hardRejected = status === "not-eligible";
   const rejectionReason = hardRejectionReason(qual.rule_summary);
   const tier = score !== null && status !== "not-eligible" ? tierForScore(score) : null;
+  const hasAiSummary = typeof qual.ai_summary === "string" && qual.ai_summary.trim().length > 0;
+  const hasAiRecommendation =
+    typeof qual.ai_recommended_action === "string" && qual.ai_recommended_action.trim().length > 0;
 
   return (
     <section className="rounded-lg border border-border/60 bg-card p-5">
@@ -920,6 +923,11 @@ function QualificationSection({ qual }: { qual?: Lead | null }) {
           Qualification result
         </h2>
         <div className="flex items-center gap-2">
+          {(hasAiSummary || hasAiRecommendation) && (
+            <span className="rounded-full border border-gold/30 bg-gold/10 px-2.5 py-1 text-[11px] font-medium text-gold">
+              AI Agent Review
+            </span>
+          )}
           {status && (
             <span
               className={cn(
@@ -983,17 +991,39 @@ function QualificationSection({ qual }: { qual?: Lead | null }) {
           </dd>
         </div>
         <div className="min-w-0">
-          <dt className="text-xs uppercase tracking-wide text-muted-foreground">
-            Recommended action
+          <dt
+            className={cn(
+              "text-xs uppercase tracking-wide",
+              hasAiRecommendation ? "font-semibold text-gold" : "text-muted-foreground",
+            )}
+          >
+            {hasAiRecommendation ? "AI Recommended Action" : "Rule Recommended Action"}
           </dt>
-          <dd className="mt-0.5 break-words text-sm text-foreground">
+          <dd
+            className={cn(
+              "mt-0.5 break-words text-sm",
+              hasAiRecommendation ? "text-gold/90" : "text-foreground",
+            )}
+          >
             {val(qual.ai_recommended_action ?? qual.rule_recommended_action)}
           </dd>
         </div>
         {(qual.rule_summary || qual.ai_summary) && (
           <div className="min-w-0 sm:col-span-2">
-            <dt className="text-xs uppercase tracking-wide text-muted-foreground">Summary</dt>
-            <dd className="mt-0.5 break-words text-sm text-muted-foreground">
+            <dt
+              className={cn(
+                "text-xs uppercase tracking-wide",
+                hasAiSummary ? "font-semibold text-gold" : "text-muted-foreground",
+              )}
+            >
+              {hasAiSummary ? "AI Summary" : "Rule Summary"}
+            </dt>
+            <dd
+              className={cn(
+                "mt-0.5 break-words text-sm",
+                hasAiSummary ? "text-gold/90" : "text-muted-foreground",
+              )}
+            >
               {val(qual.ai_summary ?? qual.rule_summary)}
             </dd>
           </div>
