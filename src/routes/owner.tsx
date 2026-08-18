@@ -58,6 +58,21 @@ const STATUSES = [
 
 type Lead = Record<string, unknown>;
 
+/**
+ * Intake questions the shortened form no longer asks. The columns still exist,
+ * so leads captured by the earlier form keep their answers and are shown here
+ * instead of being silently dropped from the record.
+ */
+const RETIRED_FIELDS: [label: string, column: string][] = [
+  ["License suspended/expired", "license_suspended"],
+  ["Rented before", "rented_before"],
+  ["Income source", "income_source"],
+  ["Could pay first week today", "first_week_payment"],
+  ["Additional driver", "additional_driver"],
+  ["Agreed to rental agreement", "agrees_to_agreement"],
+  ["Deposit ready", "deposit_ready"],
+];
+
 function fmtDate(v?: string | null) {
   if (!v) return "—";
   const d = new Date(v);
@@ -234,7 +249,8 @@ function Dashboard() {
   const [error, setError] = useState<string | null>(null);
   const [blocked, setBlocked] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [view, setView] = useState<"dashboard" | "leads">("dashboard");
+  const [view, setView] = useState<"dashboard" | "leads" | "waitlist">("dashboard");
+  const [waitlist, setWaitlist] = useState<Lead[]>([]);
   // Deterministic (and later AI) qualification output, keyed by lead id.
   // Optional by design: leads submitted before the pipeline runs simply have none.
   const [quals, setQuals] = useState<Record<string, Lead>>({});
@@ -286,6 +302,20 @@ function Dashboard() {
       setQuals({});
     }
 
+    // Waitlist entries are interest records, not leads: loaded separately and
+    // never mixed into `leads`, so they can't skew any lead metric. A missing
+    // table (migration not applied yet) must not break the leads view.
+    const wl = await supabase
+      .from("waitlist_signups")
+      .select("*")
+      .order("created_at", { ascending: false });
+    if (wl.error) {
+      console.warn("[owner] waitlist unavailable:", wl.error.message);
+      setWaitlist([]);
+    } else {
+      setWaitlist(wl.data ?? []);
+    }
+
     setLoading(false);
   }, []);
 
@@ -322,6 +352,21 @@ function Dashboard() {
     setView("leads");
   };
 
+  const showWaitlist = () => {
+    setSelectedId(null);
+    setView("waitlist");
+  };
+
+  const setContacted = async (id: string, contacted: boolean) => {
+    const prev = waitlist;
+    setWaitlist((rows) => rows.map((r) => (r.id === id ? { ...r, contacted } : r)));
+    const { error } = await supabase.from("waitlist_signups").update({ contacted }).eq("id", id);
+    if (error) {
+      setWaitlist(prev);
+      setError(describeError(error));
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background lg:grid lg:grid-cols-[220px_minmax(0,1fr)]">
       <aside className="hidden border-r border-border/60 bg-card/50 lg:flex lg:min-h-screen lg:flex-col">
@@ -350,6 +395,9 @@ function Dashboard() {
           </SidebarButton>
           <SidebarButton active={view === "leads"} icon={<ClipboardList />} onClick={showLeads}>
             Leads
+          </SidebarButton>
+          <SidebarButton active={view === "waitlist"} icon={<Clock3 />} onClick={showWaitlist}>
+            Waitlist{waitlist.length > 0 ? ` (${waitlist.length})` : ""}
           </SidebarButton>
         </nav>
         <div className="mt-auto border-t border-border/60 p-4">
@@ -380,7 +428,9 @@ function Dashboard() {
                     ? "Lead review"
                     : view === "dashboard"
                       ? "Lead qualification"
-                      : "All leads"}
+                      : view === "waitlist"
+                        ? "Waitlist"
+                        : "All leads"}
                 </h1>
                 <p className="text-xs text-muted-foreground">
                   Rental lead intake and qualification
@@ -410,6 +460,9 @@ function Dashboard() {
             <SidebarButton active={view === "leads"} icon={<ClipboardList />} onClick={showLeads}>
               Leads
             </SidebarButton>
+            <SidebarButton active={view === "waitlist"} icon={<Clock3 />} onClick={showWaitlist}>
+              Waitlist{waitlist.length > 0 ? ` (${waitlist.length})` : ""}
+            </SidebarButton>
           </div>
         </header>
 
@@ -438,6 +491,8 @@ function Dashboard() {
               onOpen={openLead}
               onShowLeads={showLeads}
             />
+          ) : view === "waitlist" ? (
+            <WaitlistView rows={waitlist} loading={loading} onSetContacted={setContacted} />
           ) : (
             <LeadList
               leads={leads}
@@ -448,6 +503,92 @@ function Dashboard() {
             />
           )}
         </main>
+      </div>
+    </div>
+  );
+}
+
+const WAITLIST_REASONS: Record<string, string> = {
+  "not-ready": "Not ready yet",
+  "vehicle-unavailable": "Waiting on a vehicle",
+  "not-eligible": "Did not qualify",
+  other: "Other",
+};
+
+const WAITLIST_TIMEFRAMES: Record<string, string> = {
+  "within-month": "Within a month",
+  "one-to-three-months": "1–3 months",
+  "three-plus-months": "3+ months",
+  unsure: "Not sure",
+};
+
+function WaitlistView({
+  rows,
+  loading,
+  onSetContacted,
+}: {
+  rows: Lead[];
+  loading: boolean;
+  onSetContacted: (id: string, contacted: boolean) => void;
+}) {
+  if (loading) return <p className="text-sm text-muted-foreground">Loading waitlist…</p>;
+
+  if (rows.length === 0) {
+    return (
+      <div className="rounded-xl border border-border/60 bg-card/50 p-6">
+        <p className="text-sm text-muted-foreground">
+          No waitlist signups yet. Visitors join from the coming-soon vehicle card, the link above
+          the request form, or the confirmation screen.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      <p className="text-sm text-muted-foreground">
+        {rows.length} signup{rows.length === 1 ? "" : "s"}. These are interest records only — no
+        rental request, no qualification, and no automated email was sent.
+      </p>
+      <div className="divide-y divide-border/60 overflow-hidden rounded-xl border border-border/60 bg-card/50">
+        {rows.map((r) => {
+          const id = String(r.id);
+          const contacted = r.contacted === true;
+          return (
+            <div key={id} className="flex flex-wrap items-start justify-between gap-3 px-4 py-3">
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-foreground">{val(r.full_name)}</p>
+                <p className="text-xs text-muted-foreground">
+                  <a className="hover:text-gold" href={`mailto:${String(r.email)}`}>
+                    {val(r.email)}
+                  </a>
+                  {r.phone ? ` · ${String(r.phone)}` : ""}
+                </p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {WAITLIST_REASONS[String(r.reason)] ?? val(r.reason)}
+                  {r.timeframe
+                    ? ` · ${WAITLIST_TIMEFRAMES[String(r.timeframe)] ?? r.timeframe}`
+                    : ""}
+                  {r.vehicle_name ? ` · ${String(r.vehicle_name)}` : ""}
+                  {` · ${fmtDateTime(r.created_at as string)}`}
+                </p>
+                {r.notes ? (
+                  <p className="mt-1 max-w-xl text-xs text-muted-foreground/80">
+                    “{String(r.notes)}”
+                  </p>
+                ) : null}
+              </div>
+              <Button
+                size="sm"
+                variant={contacted ? "outline" : "default"}
+                onClick={() => onSetContacted(id, !contacted)}
+                className={cn(!contacted && "bg-gold text-gold-foreground hover:bg-gold/90")}
+              >
+                {contacted ? "Contacted" : "Mark contacted"}
+              </Button>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
@@ -1131,26 +1272,32 @@ function LeadDetail({
           }
         />
         <Field label="Valid license" value={val(lead.has_license)} />
-        <Field label="License suspended/expired" value={val(lead.license_suspended)} />
         <Field label="Has insurance" value={val(lead.has_insurance)} />
-        <Field label="Rented before" value={val(lead.rented_before)} />
         <Field label="Driving history (5 yrs)" value={val(lead.driving_history)} />
-        <Field label="Income source" value={val(lead.income_source)} />
         <Field label="Proof of income (2 months)" value={val(lead.proof_of_income)} />
-        <Field label="Can pay first week today" value={val(lead.first_week_payment)} />
-        <Field label="Additional driver" value={val(lead.additional_driver)} />
-        <Field label="Agrees to rental agreement" value={val(lead.agrees_to_agreement)} />
         <Field label="Will provide documents" value={val(lead.will_provide_docs)} />
-
-        <Field label="Deposit ready" value={val(lead.deposit_ready)} />
         <Field label="Urgency" value={val(lead.urgency)} />
       </Section>
 
-      <Section title="Notes and consent">
+      {/* Questions retired from the shortened form. Rendered only when the lead
+          actually answered them, so older leads keep their full record without
+          showing empty rows on every new one. */}
+      {RETIRED_FIELDS.some(([, key]) => lead[key]) && (
+        <Section title="Retired questions (earlier form version)">
+          {RETIRED_FIELDS.filter(([, key]) => lead[key]).map(([label, key]) => (
+            <Field key={key} label={label} value={val(lead[key])} />
+          ))}
+        </Section>
+      )}
+
+      <Section title="Notes and acceptances">
         <Field label="Notes" value={val(lead.notes)} />
         <Field label="Understands not a reservation" value={yesNo(lead.consent_not_reservation)} />
         <Field label="Consents to contact" value={yesNo(lead.consent_contact)} />
-        <Field label="Confirms info accurate" value={yesNo(lead.consent_accurate)} />
+        <Field
+          label="Confirms accurate + accepts terms and deposit"
+          value={yesNo(lead.consent_accurate)}
+        />
         <Field label="Processing status" value={val(lead.processing_status)} />
         <Field label="Received" value={fmtDateTime(lead.created_at)} />
       </Section>

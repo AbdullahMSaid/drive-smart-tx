@@ -33,13 +33,21 @@ import {
   qualifyLead,
   saveLead,
   runAiLeadQualification,
-  INCOME_SOURCE_LABELS,
   type LeadFormData,
   type QualifiedLead,
 } from "@/lib/lead-qualification";
 import { sendLeadTestEmail } from "@/lib/lead-email.functions";
+import { RentalPolicyDialog } from "./RentalPolicyDialog";
+import { WaitlistDialog } from "./WaitlistDialog";
 
 import { cn } from "@/lib/utils";
+
+/** Display labels for the three-way insurance answer. */
+const INSURANCE_LABELS: Record<string, string> = {
+  yes: "Yes — I have my own policy",
+  no: "No",
+  "need-provided": "I need insurance provided",
+};
 
 const PURPOSES = [
   "Everyday transportation",
@@ -136,17 +144,10 @@ export function LeadForm({
         return `Renters must be at least ${MIN_RENTAL_AGE_PLACEHOLDER} years old.`;
       const req: (keyof LeadFormData)[] = [
         "hasLicense",
-        "licenseSuspended",
         "hasInsurance",
-        "rentedBefore",
         "drivingHistory",
-        "incomeSource",
         "proofOfIncome",
-        "firstWeekPayment",
-        "additionalDriver",
-        "agreesToAgreement",
         "willProvideDocs",
-        "depositReady",
         "urgency",
       ];
       for (const k of req) if (!data[k]) return "Please answer every qualification question.";
@@ -154,7 +155,7 @@ export function LeadForm({
 
     if (s === 3) {
       if (!data.consentNotReservation || !data.consentContact || !data.consentAccurate)
-        return "Please confirm all three consent checkboxes.";
+        return "Please confirm all three acceptances.";
     }
     return null;
   }
@@ -174,10 +175,15 @@ export function LeadForm({
   }
 
   async function submit() {
-    const err = validateStep(3);
-    if (err) {
-      setError(err);
-      return;
+    // Validate every step, not just the last one. A visitor who jumps straight
+    // to the rental step from a vehicle card would otherwise skip step 0.
+    for (let s = 0; s <= 3; s++) {
+      const err = validateStep(s);
+      if (err) {
+        setError(err);
+        setStep(s);
+        return;
+      }
     }
     setSubmitting(true);
     setError(null);
@@ -199,7 +205,6 @@ export function LeadForm({
             { label: "Phone", value: data.phone },
             { label: "Email", value: data.email },
             { label: "Preferred contact", value: data.contactMethod },
-            { label: "Vehicle category", value: data.vehicleCategory },
             { label: "Pickup", value: `${data.pickupDate} ${data.pickupTime}` },
             { label: "Return", value: `${data.returnDate} ${data.returnTime}` },
             { label: "Pickup preference", value: data.pickupPreference },
@@ -207,18 +212,15 @@ export function LeadForm({
             { label: "Purpose", value: data.rentalPurpose },
             { label: "Age", value: data.age },
             { label: "Valid license", value: data.hasLicense },
-            { label: "License suspended", value: data.licenseSuspended },
-            { label: "Has insurance", value: data.hasInsurance },
-            { label: "Rented before", value: data.rentedBefore },
+            {
+              label: "Has insurance",
+              value: INSURANCE_LABELS[data.hasInsurance] ?? data.hasInsurance,
+            },
             { label: "Driving history", value: data.drivingHistory },
-            { label: "Income source", value: data.incomeSource },
             { label: "Proof of income", value: data.proofOfIncome },
-            { label: "First week's payment ready", value: data.firstWeekPayment },
-            { label: "Additional driver", value: data.additionalDriver },
-            { label: "Agrees to rental agreement", value: data.agreesToAgreement },
             { label: "Will provide documents", value: data.willProvideDocs },
-            { label: "Deposit ready", value: data.depositReady },
             { label: "Urgency", value: data.urgency },
+            { label: "Accepted terms & deposit", value: data.consentAccurate ? "yes" : "no" },
             { label: "Notes", value: data.notes },
           ],
         },
@@ -262,7 +264,25 @@ export function LeadForm({
           subtitle="Answer a few questions about your rental needs so our team can quickly review your dates, vehicle preference, and basic eligibility."
         />
 
-        <div className="mt-12 mx-auto max-w-3xl">
+        {!result && (
+          <p className="mt-4 text-center text-sm text-muted-foreground">
+            Not ready to rent yet?{" "}
+            <WaitlistDialog
+              reason="not-ready"
+              description="Leave your details and we'll reach out when you're closer to needing a vehicle — no rental request is created."
+              trigger={
+                <button
+                  type="button"
+                  className="font-medium text-gold underline-offset-2 hover:underline"
+                >
+                  Join the waitlist instead
+                </button>
+              }
+            />
+          </p>
+        )}
+
+        <div className="mt-8 mx-auto max-w-3xl">
           <div className="rounded-2xl border border-border bg-card p-6 sm:p-8">
             {result ? (
               <ConfirmationView result={result} onReset={reset} />
@@ -523,53 +543,40 @@ function RentalStep({
         title="Rental request"
         desc="Tell us about the vehicle, dates, and how you'd like to receive it."
       />
-      <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="Desired vehicle">
-          <Select
-            value={data.vehicleId || "any"}
-            onValueChange={(v) => {
-              if (v === "any") {
-                update("vehicleId", "");
-                return;
-              }
-              update("vehicleId", v);
-              const veh = vehicles.find((x) => x.id === v);
-              if (veh && (veh.category === "economy" || veh.category === "premium")) {
-                update("vehicleCategory", veh.category);
-              }
-            }}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Choose a vehicle" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="any">No specific vehicle yet</SelectItem>
-              {vehicles
-                .filter((v) => v.category !== "coming-soon")
-                .map((v) => (
-                  <SelectItem key={v.id} value={v.id}>
-                    {v.name} — {v.subtitle}
-                  </SelectItem>
-                ))}
-            </SelectContent>
-          </Select>
-        </Field>
-        <Field label="Vehicle category">
-          <Select
-            value={data.vehicleCategory}
-            onValueChange={(v) => update("vehicleCategory", v as LeadFormData["vehicleCategory"])}
-          >
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="economy">Economy</SelectItem>
-              <SelectItem value="premium">Premium</SelectItem>
-              <SelectItem value="unsure">Not sure</SelectItem>
-            </SelectContent>
-          </Select>
-        </Field>
-      </div>
+      {/* The category is implied by the chosen model, so it is derived rather
+          than asked for a second time. */}
+      <Field label="Desired vehicle">
+        <Select
+          value={data.vehicleId || "any"}
+          onValueChange={(v) => {
+            if (v === "any") {
+              update("vehicleId", "");
+              update("vehicleCategory", "unsure");
+              return;
+            }
+            update("vehicleId", v);
+            const veh = vehicles.find((x) => x.id === v);
+            update(
+              "vehicleCategory",
+              veh?.category === "economy" || veh?.category === "premium" ? veh.category : "unsure",
+            );
+          }}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="Choose a vehicle" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="any">No specific vehicle yet</SelectItem>
+            {vehicles
+              .filter((v) => v.category !== "coming-soon")
+              .map((v) => (
+                <SelectItem key={v.id} value={v.id}>
+                  {v.name} — {v.subtitle} ({v.categoryLabel})
+                </SelectItem>
+              ))}
+          </SelectContent>
+        </Select>
+      </Field>
 
       <div className="grid gap-4 sm:grid-cols-2">
         <Field label="Pickup date">
@@ -729,14 +736,9 @@ function QualStep({
       </Field>
 
       <YN
-        q="Do you have a valid driver's license?"
+        q="Do you have a valid driver's license that is not suspended or expired?"
         value={data.hasLicense}
         onChange={(v) => update("hasLicense", v)}
-      />
-      <YN
-        q="Is your driver's license currently suspended or expired?"
-        value={data.licenseSuspended}
-        onChange={(v) => update("licenseSuspended", v)}
       />
 
       <Field label="Do you currently have automobile insurance?">
@@ -746,16 +748,10 @@ function QualStep({
           options={[
             ["yes", "Yes"],
             ["no", "No"],
-            ["unsure", "Not sure"],
+            ["need-provided", "I need one provided"],
           ]}
         />
       </Field>
-
-      <YN
-        q="Have you rented a vehicle before?"
-        value={data.rentedBefore}
-        onChange={(v) => update("rentedBefore", v)}
-      />
 
       <Field label="Have you had any major driving violations or serious accidents in the last 5 years?">
         <ButtonGroup
@@ -769,54 +765,10 @@ function QualStep({
         />
       </Field>
 
-      <Field label="What is your primary source of income?">
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-          {(Object.keys(INCOME_SOURCE_LABELS) as (keyof typeof INCOME_SOURCE_LABELS)[]).map(
-            (key) => (
-              <button
-                key={key}
-                type="button"
-                onClick={() => update("incomeSource", key)}
-                className={cn(
-                  "rounded-md border px-3 py-2 text-sm font-medium transition",
-                  data.incomeSource === key
-                    ? "border-gold bg-gold/10 text-foreground"
-                    : "border-border text-muted-foreground hover:text-foreground hover:border-muted-foreground/40",
-                )}
-              >
-                {INCOME_SOURCE_LABELS[key]}
-              </button>
-            ),
-          )}
-        </div>
-      </Field>
-
       <YN
         q="Can you provide proof of income from the last 2 months?"
         value={data.proofOfIncome}
         onChange={(v) => update("proofOfIncome", v)}
-      />
-      <YN
-        q="Can you pay the first week's rental payment today?"
-        value={data.firstWeekPayment}
-        onChange={(v) => update("firstWeekPayment", v)}
-      />
-
-      <Field label="Will anyone else be driving this vehicle?">
-        <ButtonGroup
-          value={data.additionalDriver}
-          onChange={(v) => update("additionalDriver", v as LeadFormData["additionalDriver"])}
-          options={[
-            ["no", "No"],
-            ["yes", "Yes — approved driver will be added"],
-          ]}
-        />
-      </Field>
-
-      <YN
-        q="Do you understand and agree to the rental agreement, mileage limits, payment schedule, and maintenance responsibilities?"
-        value={data.agreesToAgreement}
-        onChange={(v) => update("agreesToAgreement", v)}
       />
 
       <YN
@@ -824,18 +776,6 @@ function QualStep({
         value={data.willProvideDocs}
         onChange={(v) => update("willProvideDocs", v)}
       />
-
-      <Field label="Are you prepared to pay the required rental deposit if approved?">
-        <ButtonGroup
-          value={data.depositReady}
-          onChange={(v) => update("depositReady", v as LeadFormData["depositReady"])}
-          options={[
-            ["yes", "Yes"],
-            ["no", "No"],
-            ["need-pricing", "Need pricing information"],
-          ]}
-        />
-      </Field>
 
       <Field label="How soon do you need the vehicle?">
         <Select
@@ -854,6 +794,11 @@ function QualStep({
           </SelectContent>
         </Select>
       </Field>
+
+      <p className="rounded-md border border-border bg-secondary/40 p-3 text-xs leading-relaxed text-muted-foreground">
+        Only the person completing this form is being considered as the driver. Anyone else who will
+        drive the vehicle must submit their own rental request and be approved separately.
+      </p>
     </div>
   );
 }
@@ -900,30 +845,18 @@ function ReviewStep({
     ["Pickup area", data.pickupArea || "—"],
     ["Age", data.age ? `${data.age} years old` : "—"],
     ["Valid license", data.hasLicense || "—"],
-    ["License suspended/expired", data.licenseSuspended || "—"],
-    ["Insurance", data.hasInsurance || "—"],
-    ["Rented before", data.rentedBefore || "—"],
+    ["Insurance", INSURANCE_LABELS[data.hasInsurance] ?? "—"],
     ["Driving history (5y)", data.drivingHistory || "—"],
-    ["Income source", data.incomeSource ? INCOME_SOURCE_LABELS[data.incomeSource] : "—"],
     ["Proof of income (2 months)", data.proofOfIncome || "—"],
-    ["Can pay first week today", data.firstWeekPayment || "—"],
-    [
-      "Additional driver",
-      data.additionalDriver === "yes"
-        ? "Yes — approved driver to be added"
-        : data.additionalDriver || "—",
-    ],
-    ["Agrees to rental agreement", data.agreesToAgreement || "—"],
     ["Will provide docs", data.willProvideDocs || "—"],
-    ["Deposit ready", data.depositReady || "—"],
     ["Urgency", data.urgency || "—"],
   ];
   return (
     <div className="space-y-5 rise-in">
       <StepHeader
         n="04"
-        title="Review & consent"
-        desc="Please confirm your information before submitting."
+        title="Review & accept"
+        desc="Please confirm your information and accept the three items below before submitting."
       />
       <div className="overflow-hidden rounded-lg border border-border">
         <dl className="divide-y divide-border text-sm">
@@ -936,11 +869,13 @@ function ReviewStep({
         </dl>
       </div>
 
+      {/* These three acceptances replace the separate deposit-readiness and
+          rental-agreement questions that used to sit in the qualification step. */}
       <div className="space-y-3 rounded-lg border border-border bg-secondary/30 p-4">
         <Consent
           checked={data.consentNotReservation}
           onChange={(c) => update("consentNotReservation", c)}
-          label="I understand that submitting this form does not confirm a reservation."
+          label="I understand that submitting this form does not confirm a reservation, and that availability, pricing, and final approval are confirmed by the rental team."
         />
         <Consent
           checked={data.consentContact}
@@ -950,7 +885,17 @@ function ReviewStep({
         <Consent
           checked={data.consentAccurate}
           onChange={(c) => update("consentAccurate", c)}
-          label="I confirm that the information I provided is accurate to the best of my knowledge."
+          label="I confirm my information is accurate and, if approved, I accept the rental agreement terms — the required deposit, weekly payment schedule, mileage and travel limits, and maintenance responsibilities."
+        />
+        <RentalPolicyDialog
+          trigger={
+            <button
+              type="button"
+              className="ml-7 text-xs font-medium text-gold underline-offset-2 hover:underline"
+            >
+              Read the rental agreement terms
+            </button>
+          }
         />
       </div>
 
@@ -1016,6 +961,30 @@ function ConfirmationView({ result, onReset }: { result: QualifiedLead; onReset:
           Submit Another Request
         </Button>
       </div>
+
+      {/* Framed neutrally on purpose: the confirmation screen never reveals the
+          eligibility outcome, so this must not read as a consolation prize. */}
+      <p className="mt-6 text-sm text-muted-foreground">
+        Planning a rental further out?{" "}
+        <WaitlistDialog
+          reason="not-ready"
+          sourceSubmissionId={result.submissionId}
+          prefill={{
+            fullName: result.data.fullName,
+            email: result.data.email,
+            phone: result.data.phone,
+          }}
+          description="We'll reach out when you're closer to needing a vehicle. This is separate from the request you just submitted."
+          trigger={
+            <button
+              type="button"
+              className="font-medium text-gold underline-offset-2 hover:underline"
+            >
+              Join the waitlist for a later date
+            </button>
+          }
+        />
+      </p>
     </div>
   );
 }

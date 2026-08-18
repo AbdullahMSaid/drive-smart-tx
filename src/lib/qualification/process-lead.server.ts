@@ -33,6 +33,16 @@ function boolean(row: DbRow, key: string): boolean {
   return row[key] === true;
 }
 
+/**
+ * The insurance question became three-way ("yes" / "no" / "need-provided").
+ * Rows captured by the earlier form can hold "unsure", which no longer maps to
+ * an answer — return it as unanswered so the lead routes to manual review and
+ * the owner re-asks, rather than silently reinterpreting the customer.
+ */
+function normalizeInsurance(value: string): LeadFormData["hasInsurance"] {
+  return value === "yes" || value === "no" || value === "need-provided" ? value : "";
+}
+
 function rowToLeadData(row: DbRow): LeadFormData {
   return {
     fullName: string(row, "full_name"),
@@ -51,17 +61,10 @@ function rowToLeadData(row: DbRow): LeadFormData {
     notes: string(row, "notes"),
     age: string(row, "age"),
     hasLicense: string(row, "has_license") as LeadFormData["hasLicense"],
-    licenseSuspended: string(row, "license_suspended") as LeadFormData["licenseSuspended"],
-    hasInsurance: string(row, "has_insurance") as LeadFormData["hasInsurance"],
-    rentedBefore: string(row, "rented_before") as LeadFormData["rentedBefore"],
+    hasInsurance: normalizeInsurance(string(row, "has_insurance")),
     drivingHistory: string(row, "driving_history") as LeadFormData["drivingHistory"],
-    incomeSource: string(row, "income_source") as LeadFormData["incomeSource"],
     proofOfIncome: string(row, "proof_of_income") as LeadFormData["proofOfIncome"],
-    firstWeekPayment: string(row, "first_week_payment") as LeadFormData["firstWeekPayment"],
-    additionalDriver: string(row, "additional_driver") as LeadFormData["additionalDriver"],
-    agreesToAgreement: string(row, "agrees_to_agreement") as LeadFormData["agreesToAgreement"],
     willProvideDocs: string(row, "will_provide_docs") as LeadFormData["willProvideDocs"],
-    depositReady: string(row, "deposit_ready") as LeadFormData["depositReady"],
     urgency: string(row, "urgency") as LeadFormData["urgency"],
     consentNotReservation: boolean(row, "consent_not_reservation"),
     consentContact: boolean(row, "consent_contact"),

@@ -6,17 +6,12 @@
  * Persistence lives in `src/lib/lead-qualification.ts`; a future server-side
  * AI review consumes this result but must never replace it.
  */
-import {
-  PREMIUM_SUV_MIN_DAYS,
-  MIN_RENTAL_AGE_PLACEHOLDER,
-  type Vehicle,
-} from "@/data/vehicles";
+import { PREMIUM_SUV_MIN_DAYS, MIN_RENTAL_AGE_PLACEHOLDER, type Vehicle } from "@/data/vehicles";
 
 export type YesNo = "yes" | "no";
-export type YesNoMaybe = "yes" | "no" | "unsure";
+export type InsuranceAnswer = "yes" | "no" | "need-provided";
 export type ContactMethod = "phone" | "text" | "email";
 export type PickupPreference = "pickup" | "delivery";
-export type IncomeSource = "employed" | "self-employed" | "uber" | "lyft" | "other";
 
 export interface LeadFormData {
   fullName: string;
@@ -25,6 +20,11 @@ export interface LeadFormData {
   contactMethod: ContactMethod;
 
   vehicleId: string;
+  /**
+   * Derived from the selected vehicle — no longer asked. The visitor already
+   * chose the model, so the category is implied; "unsure" means no specific
+   * vehicle was selected.
+   */
   vehicleCategory: "economy" | "premium" | "unsure";
   pickupDate: string;
   pickupTime: string;
@@ -38,19 +38,17 @@ export interface LeadFormData {
   /** Exact age in years, entered as text and parsed for qualification. */
   age: string;
   hasLicense: YesNo | "";
-  licenseSuspended: YesNo | "";
-  hasInsurance: YesNoMaybe | "";
-  rentedBefore: YesNo | "";
+  hasInsurance: InsuranceAnswer | "";
   drivingHistory: "no" | "yes" | "discuss" | "";
-  incomeSource: IncomeSource | "";
   proofOfIncome: YesNo | "";
-  firstWeekPayment: YesNo | "";
-  additionalDriver: YesNo | "";
-  agreesToAgreement: YesNo | "";
   willProvideDocs: YesNo | "";
-  depositReady: "yes" | "no" | "need-pricing" | "";
   urgency: "immediate" | "within-week" | "within-two-weeks" | "later" | "researching" | "";
 
+  /**
+   * The three final acceptances. `consentAccurate` also carries acceptance of
+   * the rental agreement terms — deposit, weekly payments, mileage limits, and
+   * maintenance — which used to be two separate intake questions.
+   */
   consentNotReservation: boolean;
   consentContact: boolean;
   consentAccurate: boolean;
@@ -73,17 +71,10 @@ export const emptyLead: LeadFormData = {
   notes: "",
   age: "",
   hasLicense: "",
-  licenseSuspended: "",
   hasInsurance: "",
-  rentedBefore: "",
   drivingHistory: "",
-  incomeSource: "",
   proofOfIncome: "",
-  firstWeekPayment: "",
-  additionalDriver: "",
-  agreesToAgreement: "",
   willProvideDocs: "",
-  depositReady: "",
   urgency: "",
   consentNotReservation: false,
   consentContact: false,
@@ -94,11 +85,7 @@ export const emptyLead: LeadFormData = {
  * Persisted status values (kept identical to the existing
  * `qualification_results.rule_status` check constraint — no migration needed).
  */
-export type QualStatus =
-  | "high-priority"
-  | "needs-review"
-  | "missing-info"
-  | "not-eligible";
+export type QualStatus = "high-priority" | "needs-review" | "missing-info" | "not-eligible";
 
 /** Richer band used for reporting; derived from score + protections. */
 export type QualTier = "rejected" | "excellent" | "good" | "manual-review" | "low-quality";
@@ -149,25 +136,38 @@ export function parseAge(age: string): number | null {
   return n;
 }
 
-export const INCOME_SOURCE_LABELS: Record<IncomeSource, string> = {
-  employed: "Employed",
-  "self-employed": "Self-employed",
-  uber: "Uber",
-  lyft: "Lyft",
-  other: "Other",
-};
-
 /** Phrases that indicate an illegal or otherwise prohibited use. */
 const PROHIBITED_PATTERNS: { pattern: RegExp; label: string }[] = [
-  { pattern: /\b(drug|drugs|narcotic|narcotics|cocaine|meth|weed run|trap house)\b/i, label: "drug-related activity" },
+  {
+    pattern: /\b(drug|drugs|narcotic|narcotics|cocaine|meth|weed run|trap house)\b/i,
+    label: "drug-related activity",
+  },
   { pattern: /\b(smuggl\w*|traffick\w*|human cargo)\b/i, label: "smuggling or trafficking" },
   { pattern: /\b(stolen|steal|rob|robbery|heist|burglar\w*)\b/i, label: "theft or robbery" },
-  { pattern: /\b(gun run|guns? deal|weapons? deal|illegal firearm\w*)\b/i, label: "illegal weapons" },
-  { pattern: /\b(street race|street racing|drag race|drag racing|racing event)\b/i, label: "street racing" },
-  { pattern: /\b(evade police|evading police|outrun (the )?cops|getaway)\b/i, label: "evading law enforcement" },
-  { pattern: /\b(illegal|unlawful|crime|criminal activity)\b/i, label: "explicitly illegal activity" },
-  { pattern: /\b(sublease|sublet|re-?rent|rent it out|turo)\b/i, label: "unauthorized subleasing of the vehicle" },
-  { pattern: /\b(off-?road\w*|towing|tow a trailer|haul(ing)? a trailer)\b/i, label: "prohibited off-road or towing use" },
+  {
+    pattern: /\b(gun run|guns? deal|weapons? deal|illegal firearm\w*)\b/i,
+    label: "illegal weapons",
+  },
+  {
+    pattern: /\b(street race|street racing|drag race|drag racing|racing event)\b/i,
+    label: "street racing",
+  },
+  {
+    pattern: /\b(evade police|evading police|outrun (the )?cops|getaway)\b/i,
+    label: "evading law enforcement",
+  },
+  {
+    pattern: /\b(illegal|unlawful|crime|criminal activity)\b/i,
+    label: "explicitly illegal activity",
+  },
+  {
+    pattern: /\b(sublease|sublet|re-?rent|rent it out|turo)\b/i,
+    label: "unauthorized subleasing of the vehicle",
+  },
+  {
+    pattern: /\b(off-?road\w*|towing|tow a trailer|haul(ing)? a trailer)\b/i,
+    label: "prohibited off-road or towing use",
+  },
 ];
 
 /** Phrases in notes that objectively need a human to clarify. */
@@ -192,31 +192,65 @@ function detectProhibitedPurpose(data: LeadFormData): string[] {
   return hits;
 }
 
+/**
+ * Someone other than the applicant driving the vehicle.
+ *
+ * The intake form no longer asks about additional drivers — rental policy is
+ * that every driver submits their own request — so this pattern is the ONLY
+ * deterministic detector left for it. That makes breadth matter: it has to
+ * catch "may drive" and "is going to drive", not just "will drive". The bounded
+ * `[^.]{0,40}` gap keeps a match inside one sentence and avoids unbounded
+ * backtracking.
+ */
+const RELATION =
+  "wife|husband|spouse|partner|fianc[eé]e?|girlfriend|boyfriend|friend|brother|sister|son|daughter|cousin|mother|father|mom|dad|roommate|co-?worker|colleague|employee|nephew|niece|uncle|aunt";
+
+const ADDITIONAL_DRIVER_PATTERN = new RegExp(
+  [
+    // Explicitly named extra driver.
+    "\\b(second|another|additional|other|extra|2nd) driver\\b",
+    "\\badd(ing)? (a|another|an) driver\\b",
+    // "my husband may drive", "our friend is going to be driving", …
+    `\\b(my|our) (${RELATION})\\b[^.]{0,40}\\bdriv(e|es|ing)\\b`,
+    // "we will both drive", "we're sharing the driving".
+    "\\b(we|we'?re|we will|we'?ll) [^.]{0,25}\\bdriv(e|es|ing)\\b",
+    "\\bshar(e|ing) (the )?driv(e|ing)\\b",
+    // "someone else will drive", "he/she will be driving".
+    "\\b(someone else|somebody else)\\b[^.]{0,30}\\bdriv(e|es|ing)\\b",
+  ].join("|"),
+);
+
 /** Notes that objectively contradict the structured answers. */
 function detectNoteContradictions(data: LeadFormData): string[] {
   const n = data.notes.toLowerCase();
   if (!n.trim()) return [];
   const out: string[] = [];
 
-  if (data.hasLicense === "yes" && /\b(no|don'?t have a|without a|expired|suspended)\s+(driver'?s\s+)?licen[cs]e\b/.test(n)) {
+  if (
+    data.hasLicense === "yes" &&
+    /\b(no|don'?t have a|without a|expired|suspended)\s+(driver'?s\s+)?licen[cs]e\b/.test(n)
+  ) {
     out.push("Notes mention a license problem but the form says the license is valid");
   }
-  if (data.licenseSuspended === "no" && /\b(suspend\w*|revok\w*)\b/.test(n)) {
-    out.push("Notes mention a suspension but the form says the license is not suspended");
-  }
-  if (data.hasInsurance === "yes" && /\b(no|without|don'?t have|dropped my)\s+insurance\b/.test(n)) {
+  if (
+    data.hasInsurance === "yes" &&
+    /\b(no|without|don'?t have|dropped my)\s+insurance\b/.test(n)
+  ) {
     out.push("Notes mention no insurance but the form says insurance is active");
   }
-  if (
-    data.additionalDriver === "no" &&
-    /\b(second driver|another driver|additional driver|my (wife|husband|friend|brother|sister|son|daughter|partner|cousin) will (also )?drive)\b/.test(n)
-  ) {
-    out.push("Notes mention another driver but the form says sole driver");
+  if (ADDITIONAL_DRIVER_PATTERN.test(n)) {
+    out.push("Notes mention another driver — every driver must submit their own rental request");
   }
-  if (data.drivingHistory === "no" && /\b(accident|dui|dwi|ticket|violation|at-?fault|wreck)\b/.test(n)) {
+  if (
+    data.drivingHistory === "no" &&
+    /\b(accident|dui|dwi|ticket|violation|at-?fault|wreck)\b/.test(n)
+  ) {
     out.push("Notes mention an incident but the form reports a clean driving history");
   }
-  if (data.proofOfIncome === "yes" && /\b(no pay ?stub|cash only|paid in cash|can'?t prove income)\b/.test(n)) {
+  if (
+    data.proofOfIncome === "yes" &&
+    /\b(no pay ?stub|cash only|paid in cash|can'?t prove income)\b/.test(n)
+  ) {
     out.push("Notes suggest income cannot be documented but the form says proof is available");
   }
   return out;
@@ -258,7 +292,7 @@ export function qualifyLead(data: LeadFormData, vehicle: Vehicle | null): Qualif
   // ---------- Contact ----------
   if (data.fullName && data.phone && data.email) {
     positive.push("Complete contact information");
-    score += 10;
+    score += 12;
   } else {
     missing.push("Complete contact information");
   }
@@ -269,38 +303,33 @@ export function qualifyLead(data: LeadFormData, vehicle: Vehicle | null): Qualif
     missing.push("Age");
   } else if (ageNum >= MIN_RENTAL_AGE_PLACEHOLDER) {
     positive.push(`Meets minimum age requirement (${ageNum} years old)`);
-    score += 12;
+    score += 14;
   } else {
-    hardRejections.push(`Under the minimum rental age of ${MIN_RENTAL_AGE_PLACEHOLDER} (${ageNum} years old)`);
+    hardRejections.push(
+      `Under the minimum rental age of ${MIN_RENTAL_AGE_PLACEHOLDER} (${ageNum} years old)`,
+    );
   }
 
   // ---------- License ----------
+  // One question only: "valid" already excludes suspended and expired, so the
+  // separate suspension question was pure redundancy.
   if (data.hasLicense === "yes") {
-    positive.push("Has a valid driver's license");
-    score += 12;
+    positive.push("Has a valid, unsuspended driver's license");
+    score += 16;
   } else if (data.hasLicense === "no") {
     hardRejections.push("No valid driver's license");
   } else {
     missing.push("License status");
   }
 
-  if (data.licenseSuspended === "no") {
-    positive.push("License is not suspended or expired");
-    score += 8;
-  } else if (data.licenseSuspended === "yes") {
-    hardRejections.push("Driver's license is suspended or expired");
-  } else {
-    missing.push("License suspension status");
-  }
-
   // ---------- Insurance (never high priority unless "yes") ----------
   if (data.hasInsurance === "yes") {
     positive.push("Has automobile insurance");
-    score += 10;
-  } else if (data.hasInsurance === "unsure") {
-    risks.push("Insurance status is uncertain — needs verification");
-    manualReview.push("Insurance status is uncertain");
-    score += 2;
+    score += 14;
+  } else if (data.hasInsurance === "need-provided") {
+    risks.push("Needs insurance provided as part of the rental — must be quoted and arranged");
+    manualReview.push("Requests insurance be provided with the rental");
+    score += 4;
   } else if (data.hasInsurance === "no") {
     risks.push("No current automobile insurance");
     manualReview.push("No automobile insurance");
@@ -311,7 +340,7 @@ export function qualifyLead(data: LeadFormData, vehicle: Vehicle | null): Qualif
   // ---------- Driving history ----------
   if (data.drivingHistory === "no") {
     positive.push("Clean recent driving history reported");
-    score += 8;
+    score += 12;
   } else if (data.drivingHistory === "yes") {
     risks.push("Reported major accident or serious violation in the last 5 years");
     manualReview.push("Major accident or serious violation reported");
@@ -325,78 +354,32 @@ export function qualifyLead(data: LeadFormData, vehicle: Vehicle | null): Qualif
   }
 
   // ---------- Income ----------
-  if (!data.incomeSource) {
-    missing.push("Income source");
-  } else if (data.incomeSource === "other") {
-    risks.push("Income source listed as 'Other' — needs verification");
-    manualReview.push("Income source is 'Other'");
-    score += 2;
-  } else {
-    positive.push(`Income source: ${INCOME_SOURCE_LABELS[data.incomeSource]}`);
-    score += 6;
-  }
-
   if (data.proofOfIncome === "yes") {
     positive.push("Can provide 2 months of income proof");
-    score += 12;
+    score += 14;
   } else if (data.proofOfIncome === "no") {
     hardRejections.push("Cannot provide two months of income proof");
   } else {
     missing.push("Proof of income");
   }
 
-  // ---------- Payments ----------
-  if (data.firstWeekPayment === "yes") {
-    positive.push("Can pay the first week's rental upfront");
-    score += 12;
-  } else if (data.firstWeekPayment === "no") {
-    hardRejections.push("Cannot pay the first week's rental upfront");
-  } else {
-    missing.push("First week's payment");
-  }
-
-  if (data.depositReady === "yes") {
-    positive.push("Prepared to pay the rental deposit");
-    score += 10;
-  } else if (data.depositReady === "no") {
-    hardRejections.push("Cannot pay the rental deposit");
-  } else if (data.depositReady === "need-pricing") {
-    risks.push("Deposit readiness depends on final pricing");
-    manualReview.push("Deposit readiness depends on final pricing");
-    score += 4;
-  } else {
-    missing.push("Deposit readiness");
-  }
-
-  // ---------- Agreement & documents ----------
-  if (data.agreesToAgreement === "yes") {
-    positive.push("Agrees to the rental agreement, mileage limits, payment schedule, and maintenance terms");
-    score += 8;
-  } else if (data.agreesToAgreement === "no") {
-    hardRejections.push("Refuses the rental agreement terms");
-  } else {
-    missing.push("Rental agreement acceptance");
-  }
-
+  // ---------- Documents ----------
   if (data.willProvideDocs === "yes") {
     positive.push("Prepared to provide required documentation");
-    score += 8;
+    score += 10;
   } else if (data.willProvideDocs === "no") {
     hardRejections.push("Refuses to provide the required documents");
   } else {
     missing.push("Document readiness");
   }
 
-  // ---------- Additional driver ----------
-  if (data.additionalDriver === "no") {
-    positive.push("Sole driver");
-    score += 4;
-  } else if (data.additionalDriver === "yes") {
-    risks.push("Additional driver requested — must be approved and added");
-    manualReview.push("Additional driver requested");
-    score += 1;
-  } else {
-    missing.push("Additional driver");
+  // ---------- Final acceptances ----------
+  // Deposit readiness and rental-agreement acceptance are now the closing
+  // checkboxes, which the form requires before submit. A row reaching the
+  // engine without them came from outside the form and needs a human look.
+  if (!data.consentNotReservation || !data.consentContact || !data.consentAccurate) {
+    risks.push("One or more required acceptances are missing");
+    manualReview.push("Required acceptances (terms, deposit, contact) are not confirmed");
   }
 
   // ---------- Dates ----------
@@ -422,7 +405,7 @@ export function qualifyLead(data: LeadFormData, vehicle: Vehicle | null): Qualif
   // ---------- Vehicle ----------
   if (vehicle) {
     positive.push(`Vehicle preference specified: ${vehicle.name}`);
-    score += 3;
+    score += 4;
   } else if (data.vehicleCategory === "unsure") {
     risks.push("Specific vehicle not selected");
   }
@@ -430,7 +413,7 @@ export function qualifyLead(data: LeadFormData, vehicle: Vehicle | null): Qualif
   // ---------- Urgency ----------
   if (data.urgency === "immediate" || data.urgency === "within-week") {
     positive.push("Needs a vehicle soon");
-    score += 5;
+    score += 6;
   } else if (data.urgency === "researching") {
     risks.push("Currently just researching");
     score -= 5;
@@ -486,12 +469,12 @@ export function qualifyLead(data: LeadFormData, vehicle: Vehicle | null): Qualif
   const nextAction = hardRejected
     ? "Do not proceed to booking — contact the customer to explain the eligibility requirement that was not met."
     : status === "missing-info"
-    ? "Reach out to collect the missing information before qualifying further."
-    : status === "high-priority"
-    ? "Confirm vehicle availability and send deposit and rental-rate details promptly."
-    : tier === "manual-review"
-    ? "Manual review: verify the flagged items with the customer before confirming availability."
-    : "Review flagged items with the customer, then confirm availability and next steps.";
+      ? "Reach out to collect the missing information before qualifying further."
+      : status === "high-priority"
+        ? "Confirm vehicle availability and send deposit and rental-rate details promptly."
+        : tier === "manual-review"
+          ? "Manual review: verify the flagged items with the customer before confirming availability."
+          : "Review flagged items with the customer, then confirm availability and next steps.";
 
   const durationLabel = duration ? `${duration}-day` : "unspecified-duration";
   const purpose = data.rentalPurpose || "unspecified purpose";
@@ -502,18 +485,18 @@ export function qualifyLead(data: LeadFormData, vehicle: Vehicle | null): Qualif
   const headline = hardRejected
     ? "Not eligible"
     : tier === "excellent"
-    ? "High-priority"
-    : tier === "good"
-    ? "Good"
-    : tier === "manual-review"
-    ? "Manual-review"
-    : "Low-quality";
+      ? "High-priority"
+      : tier === "good"
+        ? "Good"
+        : tier === "manual-review"
+          ? "Manual-review"
+          : "Low-quality";
 
   const summary =
     `${headline} ${premium ? "premium SUV" : "economy"} renter requesting a ${durationLabel} ${vehicleName} rental for ${purpose}. ` +
     `Score ${finalScore}/100. ` +
     (hardRejected ? `Hard rejection: ${hardRejections.join("; ")}. ` : "") +
-    `License: ${data.hasLicense || "n/a"}. Insurance: ${data.hasInsurance || "n/a"}. Deposit: ${data.depositReady || "n/a"}. Next: ${nextAction}`;
+    `License: ${data.hasLicense || "n/a"}. Insurance: ${data.hasInsurance || "n/a"}. Income proof: ${data.proofOfIncome || "n/a"}. Next: ${nextAction}`;
 
   return {
     submissionId: generateSubmissionId(),

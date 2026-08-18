@@ -28,17 +28,10 @@ function excellent(overrides: Partial<LeadFormData> = {}): LeadFormData {
     pickupArea: "Dallas",
     age: "34",
     hasLicense: "yes",
-    licenseSuspended: "no",
     hasInsurance: "yes",
-    rentedBefore: "yes",
     drivingHistory: "no",
-    incomeSource: "employed",
     proofOfIncome: "yes",
-    firstWeekPayment: "yes",
-    additionalDriver: "no",
-    agreesToAgreement: "yes",
     willProvideDocs: "yes",
-    depositReady: "yes",
     urgency: "immediate",
     consentNotReservation: true,
     consentContact: true,
@@ -90,12 +83,16 @@ describe("hard rejections", () => {
   const cases: { name: string; data: Partial<LeadFormData>; match: RegExp }[] = [
     { name: "under age 25", data: { age: "21" }, match: /minimum rental age/i },
     { name: "no valid driver's license", data: { hasLicense: "no" }, match: /no valid driver/i },
-    { name: "suspended or expired license", data: { licenseSuspended: "yes" }, match: /suspended or expired/i },
-    { name: "refuses required documents", data: { willProvideDocs: "no" }, match: /required documents/i },
-    { name: "no two months of income proof", data: { proofOfIncome: "no" }, match: /income proof/i },
-    { name: "cannot pay the deposit", data: { depositReady: "no" }, match: /deposit/i },
-    { name: "cannot pay the first week upfront", data: { firstWeekPayment: "no" }, match: /first week/i },
-    { name: "refuses the rental agreement", data: { agreesToAgreement: "no" }, match: /rental agreement/i },
+    {
+      name: "refuses required documents",
+      data: { willProvideDocs: "no" },
+      match: /required documents/i,
+    },
+    {
+      name: "no two months of income proof",
+      data: { proofOfIncome: "no" },
+      match: /income proof/i,
+    },
     {
       name: "illegal purpose in the selected purpose",
       data: { rentalPurpose: "Need it for a drug run" },
@@ -129,17 +126,16 @@ describe("hard rejections", () => {
 describe("manual-review conditions (never high priority)", () => {
   const cases: { name: string; data: Partial<LeadFormData> }[] = [
     { name: "insurance no", data: { hasInsurance: "no" } },
-    { name: "insurance unsure", data: { hasInsurance: "unsure" } },
+    { name: "insurance needs to be provided", data: { hasInsurance: "need-provided" } },
     { name: "major accident or serious violation", data: { drivingHistory: "yes" } },
     { name: "driving history discuss", data: { drivingHistory: "discuss" } },
-    { name: "additional driver requested", data: { additionalDriver: "yes" } },
-    { name: "income source other", data: { incomeSource: "other" } },
     { name: "missing required information", data: { urgency: "" } },
     { name: "notes needing clarification", data: { notes: "Not sure about the return date yet" } },
     {
-      name: "notes contradicting the form",
-      data: { additionalDriver: "no", notes: "My wife will also drive sometimes" },
+      name: "notes mention a second driver",
+      data: { notes: "My wife will also drive sometimes" },
     },
+    { name: "an acceptance was not confirmed", data: { consentAccurate: false } },
   ];
 
   for (const c of cases) {
@@ -153,9 +149,38 @@ describe("manual-review conditions (never high priority)", () => {
   }
 
   it("flags missing info with the missing-info status", () => {
-    const r = qualifyLead(excellent({ incomeSource: "" }), economyVehicle);
+    const r = qualifyLead(excellent({ hasInsurance: "" }), economyVehicle);
     expect(r.status).toBe("missing-info");
-    expect(r.missingInfo).toContain("Income source");
+    expect(r.missingInfo).toContain("Insurance status");
+  });
+
+  // The additional-driver question was removed, so this regex is the only
+  // deterministic detector left for a second driver. It must not be narrow.
+  const secondDriverNotes = [
+    "My brother will also drive it on weekends",
+    "My husband may drive it to work some days.",
+    "My wife is going to be driving it sometimes",
+    "We will both drive on the trip",
+    "Adding a driver — my cousin",
+    "Someone else will drive it back",
+    "My partner and I are sharing the driving",
+  ];
+
+  for (const notes of secondDriverNotes) {
+    it(`routes a second driver to review: "${notes}"`, () => {
+      const r = qualifyLead(excellent({ notes }), economyVehicle);
+      expect(r.status).toBe("needs-review");
+      expect(r.manualReviewReasons.join(" ")).toMatch(/own rental request/i);
+    });
+  }
+
+  it("does not flag a note that merely mentions a passenger", () => {
+    const r = qualifyLead(
+      excellent({ notes: "My wife and two kids will be riding with me." }),
+      economyVehicle,
+    );
+    expect(r.status).toBe("high-priority");
+    expect(r.manualReviewReasons).toEqual([]);
   });
 
   it("flags a premium request under the day minimum for review", () => {

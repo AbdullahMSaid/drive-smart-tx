@@ -15,12 +15,10 @@ export function RentalPolicyDialog({ trigger }: { trigger: ReactNode }) {
       <DialogTrigger asChild>{trigger}</DialogTrigger>
       <DialogContent className="max-w-3xl max-h-[85vh] p-0 overflow-hidden">
         <DialogHeader className="border-b border-border px-6 py-4">
-          <DialogTitle className="font-display text-xl">
-            Private Car Rental Agreement
-          </DialogTitle>
+          <DialogTitle className="font-display text-xl">Private Car Rental Agreement</DialogTitle>
           <DialogDescription>
-            Royalty Luxury Transportation Services — sample rental agreement.
-            Final terms are confirmed in writing at pickup.
+            Royalty Luxury Transportation Services — sample rental agreement. Final terms are
+            confirmed in writing at pickup.
           </DialogDescription>
         </DialogHeader>
 
@@ -66,9 +64,38 @@ export function RentalPolicyDialog({ trigger }: { trigger: ReactNode }) {
 
             <section>
               <h3 className="text-foreground font-display text-base font-semibold">
+                3. Authorized Drivers
+              </h3>
+              <ul className="list-disc pl-5 mt-2 space-y-1">
+                <li>
+                  Only drivers who have been individually approved by the Lessor may operate the
+                  vehicle.
+                </li>
+                <li>
+                  <span className="text-foreground font-medium">
+                    Every person who will drive the vehicle must submit their own rental request
+                  </span>{" "}
+                  and pass the same eligibility review. Additional drivers cannot be added to
+                  someone else's request.
+                </li>
+                <li>
+                  Each approved driver must meet the minimum age of 25 and hold a valid, unsuspended
+                  driver's license.
+                </li>
+                <li>
+                  Allowing an unapproved person to drive is a contract violation and may result in
+                  immediate termination and loss of deposit.
+                </li>
+              </ul>
+            </section>
+
+            <section>
+              <h3 className="text-foreground font-display text-base font-semibold">
                 4. Maintenance Responsibilities
               </h3>
-              <p className="mt-2 text-foreground font-medium">Lessor (Owner) covers heavy mechanical repairs, including:</p>
+              <p className="mt-2 text-foreground font-medium">
+                Lessor (Owner) covers heavy mechanical repairs, including:
+              </p>
               <ul className="list-disc pl-5 space-y-1">
                 <li>Engine issues</li>
                 <li>Transmission issues</li>
@@ -76,7 +103,8 @@ export function RentalPolicyDialog({ trigger }: { trigger: ReactNode }) {
                 <li>Major electrical failures</li>
               </ul>
               <p className="mt-3">
-                Failure to complete required maintenance may result in penalties and loss of deposit.
+                Failure to complete required maintenance may result in penalties and loss of
+                deposit.
               </p>
               <p className="mt-3 text-foreground font-medium">Lessee is responsible for:</p>
               <ul className="list-disc pl-5 space-y-1">
@@ -160,7 +188,9 @@ export function RentalPolicyDialog({ trigger }: { trigger: ReactNode }) {
               <h3 className="text-foreground font-display text-base font-semibold">
                 9. Termination
               </h3>
-              <p className="mt-2 text-foreground font-medium">Lessor may terminate immediately for:</p>
+              <p className="mt-2 text-foreground font-medium">
+                Lessor may terminate immediately for:
+              </p>
               <ul className="list-disc pl-5 space-y-1">
                 <li>Non-payment</li>
                 <li>Unauthorized travel</li>

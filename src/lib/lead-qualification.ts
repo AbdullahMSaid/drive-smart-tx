@@ -69,23 +69,22 @@ export async function saveLead(lead: QualifiedLead): Promise<void> {
     notes: d.notes || null,
 
     // Step 2: Qualification (raw answers)
+    //
+    // The retired questions — license_suspended, rented_before, income_source,
+    // first_week_payment, additional_driver, agrees_to_agreement, deposit_ready
+    // — are deliberately omitted rather than written as empty strings, which
+    // their check constraints would reject. The columns stay in the table so
+    // leads captured by the longer form keep their answers. See schema-v6.sql.
     meets_age: (parseAge(d.age) ?? 0) >= MIN_RENTAL_AGE_PLACEHOLDER ? "yes" : "no",
     age: parseAge(d.age),
     has_license: d.hasLicense,
-    license_suspended: d.licenseSuspended,
     has_insurance: d.hasInsurance,
-    rented_before: d.rentedBefore,
     driving_history: d.drivingHistory,
-    income_source: d.incomeSource,
     proof_of_income: d.proofOfIncome,
-    first_week_payment: d.firstWeekPayment,
-    additional_driver: d.additionalDriver,
-    agrees_to_agreement: d.agreesToAgreement,
     will_provide_docs: d.willProvideDocs,
-    deposit_ready: d.depositReady,
     urgency: d.urgency,
 
-    // Step 3: Review consent
+    // Step 3: Review consent (also carries deposit + rental-agreement acceptance)
     consent_not_reservation: d.consentNotReservation,
     consent_contact: d.consentContact,
     consent_accurate: d.consentAccurate,

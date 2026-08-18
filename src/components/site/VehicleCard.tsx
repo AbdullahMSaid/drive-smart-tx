@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { STATUS_LABELS, type Vehicle } from "@/data/vehicles";
 import { getVehiclePricing, formatCurrency } from "@/data/pricing";
 import { RateDetailsDialog } from "./RateDetailsDialog";
+import { WaitlistDialog } from "./WaitlistDialog";
 import { cn } from "@/lib/utils";
 
 export function VehicleCard({
@@ -16,13 +17,12 @@ export function VehicleCard({
   const pricing = getVehiclePricing(vehicle.id);
   const priceLine = pricing
     ? `From ${formatCurrency(pricing.fromPrice)}/day`
-    : vehicle.priceLine ?? "Pricing on request";
+    : (vehicle.priceLine ?? "Pricing on request");
   const priceSubline =
-    vehicle.priceSubline ??
-    (isComingSoon ? "Waitlist open" : "Daily & weekly rates available");
-  const buttonLabel = vehicle.waitlist
-    ? "Join Waitlist"
-    : "Check Price & Availability";
+    vehicle.priceSubline ?? (isComingSoon ? "Waitlist open" : "Daily & weekly rates available");
+  // A waitlist vehicle can't be rented yet, so its button must not drop the
+  // visitor into the full rental form — it collects interest instead.
+  const isWaitlist = !!vehicle.waitlist;
 
   return (
     <article
@@ -65,14 +65,10 @@ export function VehicleCard({
           <h3 className="font-display text-xl font-semibold text-card-foreground">
             {vehicle.name}
           </h3>
-          <p className="text-xs uppercase tracking-wider text-gold/90 mt-0.5">
-            {vehicle.subtitle}
-          </p>
+          <p className="text-xs uppercase tracking-wider text-gold/90 mt-0.5">{vehicle.subtitle}</p>
         </div>
 
-        <p className="mt-3 text-sm text-muted-foreground leading-relaxed">
-          {vehicle.description}
-        </p>
+        <p className="mt-3 text-sm text-muted-foreground leading-relaxed">{vehicle.description}</p>
 
         {vehicle.highlights.length > 0 && (
           <ul className="mt-5 grid grid-cols-2 gap-2 text-sm">
@@ -109,9 +105,7 @@ export function VehicleCard({
               <div className="text-[11px] uppercase tracking-wider text-muted-foreground">
                 Pricing
               </div>
-              <div className="mt-1 font-display text-xl font-semibold text-gold">
-                {priceLine}
-              </div>
+              <div className="mt-1 font-display text-xl font-semibold text-gold">{priceLine}</div>
               <div className="text-xs text-muted-foreground">{priceSubline}</div>
               {pricing && !isComingSoon && (
                 <RateDetailsDialog
@@ -136,12 +130,27 @@ export function VehicleCard({
             </div>
           </div>
 
-          <Button
-            onClick={() => onCheckAvailability(vehicle)}
-            className="mt-5 w-full bg-gold text-gold-foreground hover:bg-gold/90"
-          >
-            {buttonLabel}
-          </Button>
+          {isWaitlist ? (
+            <WaitlistDialog
+              reason="vehicle-unavailable"
+              vehicleId={vehicle.id}
+              vehicleName={`${vehicle.name} (${vehicle.subtitle})`}
+              title={`Waitlist — ${vehicle.name}`}
+              description="We'll let you know as soon as this vehicle joins the fleet."
+              trigger={
+                <Button className="mt-5 w-full bg-gold text-gold-foreground hover:bg-gold/90">
+                  Join Waitlist
+                </Button>
+              }
+            />
+          ) : (
+            <Button
+              onClick={() => onCheckAvailability(vehicle)}
+              className="mt-5 w-full bg-gold text-gold-foreground hover:bg-gold/90"
+            >
+              Check Price &amp; Availability
+            </Button>
+          )}
         </div>
       </div>
     </article>

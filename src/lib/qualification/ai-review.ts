@@ -2,7 +2,9 @@ import { z } from "zod";
 
 import type { QualifiedLead } from "./engine";
 
-export const AI_REVIEW_PROMPT_VERSION = "rental-lead-review-v1";
+// v2: shortened intake (7 qualification questions), three-way insurance answer,
+// and deposit/agreement acceptance moved to the closing checkboxes.
+export const AI_REVIEW_PROMPT_VERSION = "rental-lead-review-v2";
 
 export const aiReviewSchema = z.object({
   priority: z.enum(["high", "normal", "low", "manual_review"]),
@@ -67,7 +69,14 @@ export function buildAiReviewMessages(lead: QualifiedLead) {
 
 Return only the requested structured output. Base every statement on the supplied submission. Do not invent facts, infer protected characteristics, accuse the applicant of fraud or dishonesty without objective evidence, or reject based on tone or writing style.
 
-The deterministic business decision is authoritative. You may identify supported contradictions or unclear requests and recommend manual review, but you may not convert a deterministic rejection into approval. Keep the owner summary concise and operational. The suggested customer reply must be polite, neutral, and must not promise availability or approval.`;
+The deterministic business decision is authoritative. You may identify supported contradictions or unclear requests and recommend manual review, but you may not convert a deterministic rejection into approval. Keep the owner summary concise and operational. The suggested customer reply must be polite, neutral, and must not promise availability or approval.
+
+Rental policy you must apply when reviewing:
+- Minimum renter age is 25, and a valid, unsuspended driver's license is required.
+- Every person who will drive the vehicle must submit their own rental request. The form does not ask about additional drivers, so if the notes mention someone else driving, flag it for manual review rather than treating it as approved.
+- "hasInsurance": "need-provided" means the applicant is asking for insurance to be arranged as part of the rental. That is a legitimate answer, not a rejection, but it requires a quote and must go to manual review.
+- Deposit readiness and acceptance of the rental agreement terms (deposit, weekly payments, mileage limits, maintenance) are captured by the three closing acceptances rather than as separate questions. Treat a false value in any of them as unconfirmed.
+- Do not report a field as missing information just because it is absent from this payload; only the listed fields are collected.`;
 
   const payload = {
     normalizedLead: {
@@ -86,18 +95,16 @@ The deterministic business decision is authoritative. You may identify supported
       notes: lead.data.notes,
       age: lead.data.age,
       hasLicense: lead.data.hasLicense,
-      licenseSuspended: lead.data.licenseSuspended,
       hasInsurance: lead.data.hasInsurance,
-      rentedBefore: lead.data.rentedBefore,
       drivingHistory: lead.data.drivingHistory,
-      incomeSource: lead.data.incomeSource,
       proofOfIncome: lead.data.proofOfIncome,
-      firstWeekPayment: lead.data.firstWeekPayment,
-      additionalDriver: lead.data.additionalDriver,
-      agreesToAgreement: lead.data.agreesToAgreement,
       willProvideDocs: lead.data.willProvideDocs,
-      depositReady: lead.data.depositReady,
       urgency: lead.data.urgency,
+      acceptances: {
+        understandsNotAReservation: lead.data.consentNotReservation,
+        agreesToBeContacted: lead.data.consentContact,
+        confirmsAccurateAndAcceptsTerms: lead.data.consentAccurate,
+      },
     },
     deterministicResult: {
       score: lead.score,
