@@ -15,9 +15,28 @@ import { SiteFooter } from "@/components/site/SiteFooter";
 import { scrollToId } from "@/lib/scroll";
 import { usePastHero } from "@/hooks/use-past-hero";
 import type { Vehicle } from "@/data/vehicles";
+import {
+  autoRentalSchema,
+  breadcrumbSchema,
+  faqSchema,
+  jsonLdScript,
+  websiteSchema,
+} from "@/lib/structured-data";
 
 export const Route = createFileRoute("/")({
   component: Landing,
+  head: () => ({
+    // Structured data lives on the landing page rather than the root so the
+    // owner portal and privacy page don't claim to be the business homepage.
+    // FAQPage is generated from the same array the page renders, so the markup
+    // can't drift from the visible answers.
+    scripts: [
+      jsonLdScript(autoRentalSchema()),
+      jsonLdScript(websiteSchema()),
+      jsonLdScript(faqSchema()),
+      jsonLdScript(breadcrumbSchema([{ name: "Home", path: "/" }])),
+    ],
+  }),
 });
 
 function Landing() {

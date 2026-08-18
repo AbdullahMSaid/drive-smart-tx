@@ -1,0 +1,8 @@
+# https://drive-smart-tx.lovable.app
+User-agent: *
+Allow: /
+
+# Private owner portal — no public content to index.
+Disallow: /owner
+
+Sitemap: https://drive-smart-tx.lovable.app/sitemap.xml

@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { SiteNav } from "@/components/site/SiteNav";
 import { SiteFooter } from "@/components/site/SiteFooter";
+import { absoluteUrl } from "@/lib/site";
 
 export const Route = createFileRoute("/privacy")({
   component: PrivacyPage,
@@ -18,9 +19,12 @@ export const Route = createFileRoute("/privacy")({
         content:
           "How Royalty Luxury Transportation Services collects, uses, and protects your information.",
       },
-      { property: "og:url", content: "https://drive-smart-tx.lovable.app/privacy" },
+      // Derived from VITE_SITE_URL rather than hardcoded, so moving off the
+      // Lovable preview domain doesn't leave a canonical pointing at the old host.
+      { property: "og:url", content: absoluteUrl("/privacy") },
+      { property: "og:type", content: "article" },
     ],
-    links: [{ rel: "canonical", href: "https://drive-smart-tx.lovable.app/privacy" }],
+    links: [{ rel: "canonical", href: absoluteUrl("/privacy") }],
   }),
 });
 
@@ -30,9 +34,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   return (
     <section className="mt-10">
       <h2 className="font-display text-2xl font-semibold text-foreground">{title}</h2>
-      <div className="mt-3 space-y-3 text-sm leading-relaxed text-muted-foreground">
-        {children}
-      </div>
+      <div className="mt-3 space-y-3 text-sm leading-relaxed text-muted-foreground">{children}</div>
     </section>
   );
 }
@@ -86,8 +88,8 @@ function PrivacyPage() {
           <Section title="3. AI-Assisted Processing">
             <p>
               Information you submit may be processed by AI systems solely to organize rental
-              inquiries, summarize submitted information, identify missing information, and help
-              our team respond more efficiently.
+              inquiries, summarize submitted information, identify missing information, and help our
+              team respond more efficiently.
             </p>
             <p>
               AI does not make final rental approval decisions. A member of our team reviews every
@@ -158,7 +160,10 @@ function PrivacyPage() {
 
           <Section title="12. Contact">
             <ul className="space-y-1">
-              <li><span className="text-foreground">Business Name:</span> Royalty Luxury Transportation Services</li>
+              <li>
+                <span className="text-foreground">Business Name:</span> Royalty Luxury
+                Transportation Services
+              </li>
               <li>
                 <span className="text-foreground">Email:</span>{" "}
                 <a href="mailto:royaltylux8@gmail.com" className="text-gold hover:underline">
@@ -171,7 +176,10 @@ function PrivacyPage() {
                   (614) 359-1370
                 </a>
               </li>
-              <li><span className="text-foreground">Business Address:</span> Serving the greater Dallas area, Texas</li>
+              <li>
+                <span className="text-foreground">Business Address:</span> Serving the greater
+                Dallas area, Texas
+              </li>
             </ul>
           </Section>
         </div>

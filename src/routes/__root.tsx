@@ -11,6 +11,21 @@ import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
+import { absoluteUrl, BUSINESS, OG_IMAGE } from "../lib/site";
+
+/**
+ * Title and description are tuned for local intent — the searches this business
+ * can realistically win are "car rental Dallas" / "SUV rental Dallas TX", not
+ * the national head terms Enterprise and Hertz own. The city and state lead so
+ * they survive Google's ~60-character title truncation.
+ */
+const DEFAULT_TITLE = "Car & SUV Rental in Dallas, TX | Royalty Luxury Transportation Services";
+
+const DEFAULT_DESCRIPTION =
+  "Affordable car and SUV rentals in Dallas, Texas. Economy sedans from $69/day and premium full-size Suburbans for family trips, airport runs, and business travel. Daily and weekly rates, serving the DFW metroplex. Renters must be 25+.";
+
+/** Approximate centre of ZIP 75235 — replace if an exact address is published. */
+const DALLAS_ICBM = "32.8265, -96.8479";
 
 function NotFoundComponent() {
   return (
@@ -48,7 +63,10 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
         <p className="mt-2 text-sm text-muted-foreground">Try refreshing or head back home.</p>
         <div className="mt-6 flex flex-wrap justify-center gap-2">
           <button
-            onClick={() => { router.invalidate(); reset(); }}
+            onClick={() => {
+              router.invalidate();
+              reset();
+            }}
             className="inline-flex items-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
           >
             Try again
@@ -70,26 +88,54 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Royalty Luxury Transportation Services — Texas Economy & Premium SUV Rentals" },
-      { name: "description", content: "Royalty Luxury Transportation Services offers Texas vehicle rentals for everyday drives and premium travel — economy cars and full-size premium SUVs for family trips, airport transportation, and special occasions." },
-      { name: "author", content: "Royalty Luxury Transportation Services" },
-      { property: "og:title", content: "Royalty Luxury Transportation Services — Texas Economy & Premium SUV Rentals" },
-      { property: "og:description", content: "Texas economy cars and premium SUV rentals for family trips, airport transportation, business travel, and special occasions." },
+      { title: DEFAULT_TITLE },
+      { name: "description", content: DEFAULT_DESCRIPTION },
+      { name: "author", content: BUSINESS.name },
+      { name: "theme-color", content: "#0b0d10" },
+
+      // --- Local SEO: this is a Dallas-based rental, not a national brand ----
+      { name: "geo.region", content: "US-TX" },
+      { name: "geo.placename", content: `${BUSINESS.city}, ${BUSINESS.regionName}` },
+      { name: "ICBM", content: DALLAS_ICBM },
+
+      // --- Open Graph -------------------------------------------------------
+      { property: "og:title", content: DEFAULT_TITLE },
+      { property: "og:description", content: DEFAULT_DESCRIPTION },
       { property: "og:type", content: "website" },
-      { property: "og:site_name", content: "Royalty Luxury Transportation Services" },
+      { property: "og:site_name", content: BUSINESS.name },
+      { property: "og:locale", content: "en_US" },
+      { property: "og:url", content: absoluteUrl("/") },
+      // Without og:image, scrapers fall back to guessing the largest <img> on
+      // the page — which picked a random hero car photo instead of the brand.
+      { property: "og:image", content: absoluteUrl(OG_IMAGE.path) },
+      { property: "og:image:secure_url", content: absoluteUrl(OG_IMAGE.path) },
+      { property: "og:image:type", content: "image/png" },
+      { property: "og:image:width", content: String(OG_IMAGE.width) },
+      { property: "og:image:height", content: String(OG_IMAGE.height) },
+      { property: "og:image:alt", content: OG_IMAGE.alt },
+
+      // --- Twitter/X --------------------------------------------------------
+      // summary_large_image promises a large image, so twitter:image is not
+      // optional here: without it the card renders as bare text.
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: "Royalty Luxury Transportation Services — Texas Economy & Premium SUV Rentals" },
-      { name: "twitter:description", content: "Texas economy cars and premium SUV rentals for family trips, airport transportation, business travel, and special occasions." },
+      { name: "twitter:title", content: DEFAULT_TITLE },
+      { name: "twitter:description", content: DEFAULT_DESCRIPTION },
+      { name: "twitter:image", content: absoluteUrl(OG_IMAGE.path) },
+      { name: "twitter:image:alt", content: OG_IMAGE.alt },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
+      { rel: "canonical", href: absoluteUrl("/") },
       { rel: "icon", type: "image/png", sizes: "32x32", href: "/favicon-32.png" },
       { rel: "icon", type: "image/png", sizes: "192x192", href: "/favicon-192.png" },
       { rel: "icon", type: "image/png", sizes: "512x512", href: "/favicon-512.png" },
       { rel: "apple-touch-icon", sizes: "192x192", href: "/favicon-192.png" },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "" },
-      { rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" },
+      {
+        rel: "stylesheet",
+        href: "https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap",
+      },
     ],
   }),
   shellComponent: RootShell,
